@@ -15,8 +15,6 @@
   <h1>Standings</h1>
   <p><a href="index.html">Home</a></p>
 
-  <div id="status">Standings engine loaded.</div>
-
   <table id="tbl">
     <thead>
       <tr>
@@ -58,89 +56,21 @@
       </tr>
     </thead>
 
-    <tbody></tbody>
+    <tbody>
+      <!-- Rows will be injected here later -->
+    </tbody>
   </table>
 
 <script>
-/* ===============================
-   DEMO DATA (TEMPORARY)
-   This simulates what scoring
-   will produce later.
-   =============================== */
-
-const standingsData = [
-  {
-    name: "Alice",
-    wc_adv: 3, wc_ats: 2, wc_ou: 1, wc_total: 6,
-    div_adv: "", div_ats: "", div_ou: "", div_total: "",
-    conf_adv: "", conf_ats: "", conf_ou: "", conf_total: "",
-    sb_adv: "", sb_ats: "", sb_ou: "",
-    sb_afc: "", sb_nfc: "", sb_champ: "", sb_total: "",
-    total: 6,
-    tiebreaker: 0
-  },
-  {
-    name: "Bob",
-    wc_adv: "", wc_ats: "", wc_ou: "", wc_total: "",
-    div_adv: "", div_ats: "", div_ou: "", div_total: "",
-    conf_adv: "", conf_ats: "", conf_ou: "", conf_total: "",
-    sb_adv: "", sb_ats: "", sb_ou: "",
-    sb_afc: "", sb_nfc: "", sb_champ: "", sb_total: "",
-    total: 0,
-    tiebreaker: 0
-  }
-];
-
-/* ===============================
-   RENDER STANDINGS
-   =============================== */
-
-function renderStandings(rows) {
-  const tbody = document.querySelector("#tbl tbody");
-  tbody.innerHTML = "";
-
-  rows.forEach((r, i) => {
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td data-col="rank">${i + 1}</td>
-      <td data-col="entrant">${r.name}</td>
-
-      <td data-col="wc_adv">${r.wc_adv}</td>
-      <td data-col="wc_ats">${r.wc_ats}</td>
-      <td data-col="wc_ou">${r.wc_ou}</td>
-      <td data-col="wc_total">${r.wc_total}</td>
-
-      <td data-col="div_adv">${r.div_adv}</td>
-      <td data-col="div_ats">${r.div_ats}</td>
-      <td data-col="div_ou">${r.div_ou}</td>
-      <td data-col="div_total">${r.div_total}</td>
-
-      <td data-col="conf_adv">${r.conf_adv}</td>
-      <td data-col="conf_ats">${r.conf_ats}</td>
-      <td data-col="conf_ou">${r.conf_ou}</td>
-      <td data-col="conf_total">${r.conf_total}</td>
-
-      <td data-col="sb_adv">${r.sb_adv}</td>
-      <td data-col="sb_ats">${r.sb_ats}</td>
-      <td data-col="sb_ou">${r.sb_ou}</td>
-      <td data-col="sb_afc">${r.sb_afc}</td>
-      <td data-col="sb_nfc">${r.sb_nfc}</td>
-      <td data-col="sb_champ">${r.sb_champ}</td>
-      <td data-col="sb_total">${r.sb_total}</td>
-
-      <td data-col="total"><b>${r.total}</b></td>
-      <td data-col="tb">${r.tiebreaker}</td>
-    `;
-
-    tbody.appendChild(tr);
-  });
-
-  function applyAutoColumnVisibility() {
+/*
+  This function will be called AFTER real data is rendered.
+  It hides any column that has no real values.
+*/
+function applyAutoColumnVisibility() {
   const table = document.getElementById("tbl");
   const alwaysShow = new Set(["rank", "entrant", "total", "tb"]);
 
-  // 1) Hide/show individual columns
+  // Hide/show individual columns
   const cols = new Set(
     Array.from(table.querySelectorAll("[data-col]"))
       .map(el => el.getAttribute("data-col"))
@@ -155,12 +85,10 @@ function renderStandings(rows) {
       return v !== "" && v !== "0";
     });
 
-    cells.forEach(c => {
-      c.classList.toggle("col-hidden", !hasValue);
-    });
+    cells.forEach(c => c.classList.toggle("col-hidden", !hasValue));
   });
 
-  // 2) Hide grouped headers if ALL their columns are hidden
+  // Hide grouped headers if all child columns are hidden
   const groupMap = {
     "Wild Card Round": ["wc_adv","wc_ats","wc_ou","wc_total"],
     "Divisional Round": ["div_adv","div_ats","div_ou","div_total"],
@@ -180,42 +108,7 @@ function renderStandings(rows) {
 
     th.classList.toggle("col-hidden", !shouldShow);
   });
-};
 }
-
-/* ===============================
-   AUTO-HIDE UNUSED COLUMNS
-   =============================== */
-
-function applyAutoColumnVisibility() {
-  const alwaysShow = new Set(["rank", "entrant", "total", "tb"]);
-  const table = document.getElementById("tbl");
-
-  const cols = new Set(
-    Array.from(table.querySelectorAll("[data-col]"))
-      .map(el => el.getAttribute("data-col"))
-  );
-
-  cols.forEach(col => {
-    if (alwaysShow.has(col)) return;
-
-    const cells = table.querySelectorAll(`[data-col="${col}"]`);
-    const hasValue = Array.from(cells).some(c => {
-      const v = c.textContent.trim();
-      return v !== "" && v !== "0";
-    });
-
-    cells.forEach(c => {
-      c.classList.toggle("col-hidden", !hasValue);
-    });
-  });
-}
-
-/* ===============================
-   INIT
-   =============================== */
-
-renderStandings(standingsData);
 </script>
 
 </body>
