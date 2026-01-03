@@ -3,146 +3,176 @@
 <head>
   <meta charset="utf-8" />
   <title>Standings</title>
+
+  <style>
+    table { border-collapse: collapse; }
+    th, td { padding: 6px; border: 1px solid #000; text-align: center; }
+    .col-hidden { display: none; }
+  </style>
 </head>
+
 <body>
   <h1>Standings</h1>
   <p><a href="index.html">Home</a></p>
 
-  <div id="status">Loading…</div>
+  <div id="status">Standings engine loaded.</div>
 
-  <table border="1" cellpadding="6" id="tbl" style="display:none;">
+  <table id="tbl">
     <thead>
-<thead>
-  <tr>
-    <th rowspan="2">Rank</th>
-    <th rowspan="2">Entrant</th>
+      <tr>
+        <th rowspan="2" data-col="rank">Rank</th>
+        <th rowspan="2" data-col="entrant">Entrant</th>
 
-    <th colspan="4">Wild Card Round</th>
-    <th colspan="4">Divisional Round</th>
-    <th colspan="4">Conference Championships</th>
-    <th colspan="7">Super Bowl</th>
+        <th colspan="4">Wild Card Round</th>
+        <th colspan="4">Divisional Round</th>
+        <th colspan="4">Conference Championships</th>
+        <th colspan="7">Super Bowl</th>
 
-    <th rowspan="2">Total</th>
-    <th rowspan="2">Tie-breaker</th>
-  </tr>
-  <tr>
-    <th>Advancing</th>
-    <th>Spread</th>
-    <th>O/U</th>
-    <th>Total WC</th>
+        <th rowspan="2" data-col="total">Total</th>
+        <th rowspan="2" data-col="tb">Tie-breaker</th>
+      </tr>
 
-    <th>Advancing</th>
-    <th>Spread</th>
-    <th>O/U</th>
-    <th>Total DIV</th>
+      <tr>
+        <th data-col="wc_adv">Advancing</th>
+        <th data-col="wc_ats">Spread</th>
+        <th data-col="wc_ou">O/U</th>
+        <th data-col="wc_total">WC Total</th>
 
-    <th>Advancing</th>
-    <th>Spread</th>
-    <th>O/U</th>
-    <th>Total CONF</th>
+        <th data-col="div_adv">Advancing</th>
+        <th data-col="div_ats">Spread</th>
+        <th data-col="div_ou">O/U</th>
+        <th data-col="div_total">DIV Total</th>
 
-    <th>Advancing</th>
-    <th>Spread</th>
-    <th>O/U</th>
-    <th>AFC Champ</th>
-    <th>NFC Champ</th>
-    <th>SB Champ</th>
-    <th>Total SB</th>
-  </tr>
-</thead>
+        <th data-col="conf_adv">Advancing</th>
+        <th data-col="conf_ats">Spread</th>
+        <th data-col="conf_ou">O/U</th>
+        <th data-col="conf_total">CONF Total</th>
+
+        <th data-col="sb_adv">Advancing</th>
+        <th data-col="sb_ats">Spread</th>
+        <th data-col="sb_ou">O/U</th>
+        <th data-col="sb_afc">AFC</th>
+        <th data-col="sb_nfc">NFC</th>
+        <th data-col="sb_champ">SB Champ</th>
+        <th data-col="sb_total">SB Total</th>
+      </tr>
     </thead>
+
     <tbody></tbody>
   </table>
 
 <script>
-  // Your scoring rules (we’ll apply these once picks + lines are added)
-  const SCORING = {
-    WildCard:    { adv: 3,   ats: 2,   ou: 1   },
-    Divisional:  { adv: 4.5, ats: 3,   ou: 1.5 },
-    Conference:  { adv: 9,   ats: 6,   ou: 3   },
-    SuperBowl:   { adv: 13.5,ats: 9,   ou: 4.5 },
-    SB: { afc: 4.5, nfc: 4.5, bothTeams: 1.5, champ: 7.5 }
-  };
+/* ===============================
+   DEMO DATA (TEMPORARY)
+   This simulates what scoring
+   will produce later.
+   =============================== */
 
-  // Live scoreboard (proxy fallback)
-  const SCOREBOARD_URLS = [
-    "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(
-      "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
-    ),
-    "https://corsproxy.io/?" + encodeURIComponent(
-      "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
-    )
-  ];
-
-  const statusEl = document.getElementById("status");
-  const tableEl = document.getElementById("tbl");
-  const tbodyEl = tableEl.querySelector("tbody");
-
-  async function fetchJsonWithFallback(urls) {
-    for (const u of urls) {
-      try {
-        const r = await fetch(u, { cache: "no-store" });
-        if (!r.ok) continue;
-        return await r.json();
-      } catch (e) {}
-    }
-    throw new Error("Failed to fetch live scoreboard");
+const standingsData = [
+  {
+    name: "Alice",
+    wc_adv: 3, wc_ats: 2, wc_ou: 1, wc_total: 6,
+    div_adv: "", div_ats: "", div_ou: "", div_total: "",
+    conf_adv: "", conf_ats: "", conf_ou: "", conf_total: "",
+    sb_adv: "", sb_ats: "", sb_ou: "",
+    sb_afc: "", sb_nfc: "", sb_champ: "", sb_total: "",
+    total: 6,
+    tiebreaker: 0
+  },
+  {
+    name: "Bob",
+    wc_adv: "", wc_ats: "", wc_ou: "", wc_total: "",
+    div_adv: "", div_ats: "", div_ou: "", div_total: "",
+    conf_adv: "", conf_ats: "", conf_ou: "", conf_total: "",
+    sb_adv: "", sb_ats: "", sb_ou: "",
+    sb_afc: "", sb_nfc: "", sb_champ: "", sb_total: "",
+    total: 0,
+    tiebreaker: 0
   }
+];
 
-  // ---- Standings model (will be filled once we load picks/lines) ----
-  // This is the shape we’ll compute later:
-  // standings[name] = { wc, div, conf, sb, sbPred, total, tiebreaker }
-  function emptyStandingsRow(name) {
-    return { name, wc: 0, div: 0, conf: 0, sb: 0, sbPred: 0, total: 0, tiebreaker: 0 };
-  }
+/* ===============================
+   RENDER STANDINGS
+   =============================== */
 
-  function renderStandings(rows) {
-    // sort: total desc, tiebreaker asc
-    rows.sort((a, b) => (b.total - a.total) || (a.tiebreaker - b.tiebreaker) || a.name.localeCompare(b.name));
+function renderStandings(rows) {
+  const tbody = document.querySelector("#tbl tbody");
+  tbody.innerHTML = "";
 
-    tbodyEl.innerHTML = "";
-    rows.forEach((r, idx) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${idx + 1}</td>
-        <td>${r.name}</td>
+  rows.forEach((r, i) => {
+    const tr = document.createElement("tr");
 
-        <td>${r.wc}</td>
-        <td>${r.div}</td>
-        <td>${r.conf}</td>
-        <td>${r.sb}</td>
-        <td>${r.sbPred}</td>
+    tr.innerHTML = `
+      <td data-col="rank">${i + 1}</td>
+      <td data-col="entrant">${r.name}</td>
 
-        <td><b>${r.total}</b></td>
-        <td>${r.tiebreaker}</td>
-      `;
-      tbodyEl.appendChild(tr);
+      <td data-col="wc_adv">${r.wc_adv}</td>
+      <td data-col="wc_ats">${r.wc_ats}</td>
+      <td data-col="wc_ou">${r.wc_ou}</td>
+      <td data-col="wc_total">${r.wc_total}</td>
+
+      <td data-col="div_adv">${r.div_adv}</td>
+      <td data-col="div_ats">${r.div_ats}</td>
+      <td data-col="div_ou">${r.div_ou}</td>
+      <td data-col="div_total">${r.div_total}</td>
+
+      <td data-col="conf_adv">${r.conf_adv}</td>
+      <td data-col="conf_ats">${r.conf_ats}</td>
+      <td data-col="conf_ou">${r.conf_ou}</td>
+      <td data-col="conf_total">${r.conf_total}</td>
+
+      <td data-col="sb_adv">${r.sb_adv}</td>
+      <td data-col="sb_ats">${r.sb_ats}</td>
+      <td data-col="sb_ou">${r.sb_ou}</td>
+      <td data-col="sb_afc">${r.sb_afc}</td>
+      <td data-col="sb_nfc">${r.sb_nfc}</td>
+      <td data-col="sb_champ">${r.sb_champ}</td>
+      <td data-col="sb_total">${r.sb_total}</td>
+
+      <td data-col="total"><b>${r.total}</b></td>
+      <td data-col="tb">${r.tiebreaker}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  applyAutoColumnVisibility();
+}
+
+/* ===============================
+   AUTO-HIDE UNUSED COLUMNS
+   =============================== */
+
+function applyAutoColumnVisibility() {
+  const alwaysShow = new Set(["rank", "entrant", "total", "tb"]);
+  const table = document.getElementById("tbl");
+
+  const cols = new Set(
+    Array.from(table.querySelectorAll("[data-col]"))
+      .map(el => el.getAttribute("data-col"))
+  );
+
+  cols.forEach(col => {
+    if (alwaysShow.has(col)) return;
+
+    const cells = table.querySelectorAll(`[data-col="${col}"]`);
+    const hasValue = Array.from(cells).some(c => {
+      const v = c.textContent.trim();
+      return v !== "" && v !== "0";
     });
 
-    tableEl.style.display = "";
-  }
-
-  async function main() {
-    statusEl.textContent = "Checking live NFL feed…";
-    const data = await fetchJsonWithFallback(SCOREBOARD_URLS);
-    const totalEvents = (data.events || []).length;
-
-    // For now we show an empty table until picks/lines exist.
-    // Next step will be adding these files:
-    // 1) wildcard_picks.csv (and later divisional_picks.csv, etc.)
-    // 2) lines.csv (GameID,Spread,Total) so we can score ATS + O/U
-    statusEl.textContent =
-      `Live feed OK (events returned: ${totalEvents}). Standings page is ready to calculate once picks + lines are uploaded.`;
-
-    // Show a placeholder empty table (so the layout is visible)
-    renderStandings([]);
-  }
-
-  main().catch(err => {
-    console.error(err);
-    statusEl.textContent = "Could not load live feed right now.";
-    tableEl.style.display = "none";
+    cells.forEach(c => {
+      c.classList.toggle("col-hidden", !hasValue);
+    });
   });
+}
+
+/* ===============================
+   INIT
+   =============================== */
+
+renderStandings(standingsData);
 </script>
+
 </body>
 </html>
