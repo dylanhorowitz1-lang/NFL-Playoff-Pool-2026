@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Games (Live IDs)</title>
+</head>
+<body>
+  <h1>Games (Live IDs)</h1>
+  <p>Use the GameID values (eventId) in your picks.csv.</p>
+
+  <table border="1" cellpadding="6" id="tbl">
+    <thead>
+      <tr>
+        <th>GameID (eventId)</th>
+        <th>Matchup</th>
+        <th>Status</th>
+        <th>Score</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const url = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
+
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        const tbody = document.querySelector("#tbl tbody");
+        const events = data.events || [];
+
+        events.forEach(ev => {
+          const comp = ev.competitions?.[0];
+          const teams = comp?.competitors || [];
+          const away = teams.find(t => t.homeAway === "away");
+          const home = teams.find(t => t.homeAway === "home");
+
+          const status = comp?.status?.type?.shortDetail || "";
+          const awayScore = away?.score ?? "";
+          const homeScore = home?.score ?? "";
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${ev.id}</td>
+            <td>${away?.team?.displayName || "Away"} @ ${home?.team?.displayName || "Home"}</td>
+            <td>${status}</td>
+            <td>${awayScore} - ${homeScore}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        document.body.insertAdjacentHTML("beforeend", "<p>Could not load games.</p>");
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
