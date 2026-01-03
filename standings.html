@@ -136,7 +136,51 @@ function renderStandings(rows) {
     tbody.appendChild(tr);
   });
 
-  applyAutoColumnVisibility();
+  function applyAutoColumnVisibility() {
+  const table = document.getElementById("tbl");
+  const alwaysShow = new Set(["rank", "entrant", "total", "tb"]);
+
+  // 1) Hide/show individual columns
+  const cols = new Set(
+    Array.from(table.querySelectorAll("[data-col]"))
+      .map(el => el.getAttribute("data-col"))
+  );
+
+  cols.forEach(col => {
+    if (alwaysShow.has(col)) return;
+
+    const cells = table.querySelectorAll(`[data-col="${col}"]`);
+    const hasValue = Array.from(cells).some(c => {
+      const v = c.textContent.trim();
+      return v !== "" && v !== "0";
+    });
+
+    cells.forEach(c => {
+      c.classList.toggle("col-hidden", !hasValue);
+    });
+  });
+
+  // 2) Hide grouped headers if ALL their columns are hidden
+  const groupMap = {
+    "Wild Card Round": ["wc_adv","wc_ats","wc_ou","wc_total"],
+    "Divisional Round": ["div_adv","div_ats","div_ou","div_total"],
+    "Conference Championships": ["conf_adv","conf_ats","conf_ou","conf_total"],
+    "Super Bowl": ["sb_adv","sb_ats","sb_ou","sb_afc","sb_nfc","sb_champ","sb_total"]
+  };
+
+  const headerRow = table.querySelector("thead tr:first-child");
+  Array.from(headerRow.children).forEach(th => {
+    const label = th.textContent.trim();
+    if (!groupMap[label]) return;
+
+    const shouldShow = groupMap[label].some(col =>
+      Array.from(table.querySelectorAll(`[data-col="${col}"]`))
+        .some(c => !c.classList.contains("col-hidden"))
+    );
+
+    th.classList.toggle("col-hidden", !shouldShow);
+  });
+};
 }
 
 /* ===============================
