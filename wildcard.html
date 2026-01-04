@@ -11,6 +11,7 @@
     .pending { background: #e7e6e6; }   /* gray */
     .correct { background: #c6efce; }   /* green */
     .wrong   { background: #ffc7ce; }   /* red */
+    .push    { background: #fff2cc; }   /* yellow */
 
     .small { font-size: 12px; opacity: 0.85; }
   </style>
@@ -19,13 +20,7 @@
   <h1>Wild Card Picks</h1>
   <p><a href="index.html">Home</a></p>
 
-  <div style="margin: 10px 0;">
-    <label><b>Load picks CSV:</b></label>
-    <input type="file" id="csvFile" accept=".csv" />
-    <span class="small">CSV headers must be: Name,Email,GameID,PickAdvancing,PickATS,PickOU</span>
-  </div>
-
-  <div id="msg" style="margin: 8px 0;"></div>
+  <div id="msg" class="small" style="margin: 8px 0;"></div>
 
   <table id="picksTable">
     <thead id="thead"></thead>
@@ -33,7 +28,7 @@
   </table>
 
 <script>
-  // Live scoreboard (proxy fallback)
+  // Live scoreboard via proxy fallback (GitHub Pages friendly)
   const SCOREBOARD_URLS = [
     "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(
       "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
@@ -46,19 +41,36 @@
   const msgEl = document.getElementById("msg");
   const theadEl = document.getElementById("thead");
   const tbodyEl = document.getElementById("tbody");
-  const fileEl = document.getElementById("csvFile");
 
-  let wcGames = [];            // array of ESPN events (6)
-  let gameById = new Map();    // GameID -> { matchup, isFinal, advWinner }
+  function norm(s) { return String(s || "").trim().toLowerCase(); }
+
+  function splitCSVLine(line) {
+    // Minimal quoted CSV support
+    const out = [];
+    let cur = "", inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"' ) {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        out.push(cur); cur = "";
+      } else {
+        cur += ch;
+      }
+    }
+    out.push(cur);
+    return out.map(x => x.trim());
+  }
 
   function parseCSV(text) {
-    const lines = text.trim().split(/\r?\n/);
+    const lines = text.replace(/\r/g, "").split("\n").filter(l => l.trim() !== "");
     if (lines.length < 2) return [];
-    const headers = lines[0].split(",").map(h => h.trim());
-    return lines.slice(1).filter(Boolean).map(line => {
-      const cols = line.split(",").map(c => c.trim());
+    const headers = splitCSVLine(lines[0]);
+    return lines.slice(1).map(line => {
+      const cols = splitCSVLine(line);
       const obj = {};
-      headers.forEach((h, i) => obj[h] = cols[i] ?? "");
+      headers.forEach((h, i) => obj[h] = (cols[i] ?? ""));
       return obj;
     });
   }
@@ -74,208 +86,252 @@
     throw new Error("Failed to fetch scoreboard");
   }
 
-  function getWildCardEvents(data) {
-    const events = data.events || [];
-    return events.filter(ev => {
-      const isPostseason = (ev.season?.type === 3) || String(ev.season?.slug || "").includes("post");
-      const isWeek1 = (ev.week?.number === 1);
-      return isPostseason && isWeek1;
-    }).slice(0, 6);
+  async function fetchTextOrNull(path) {
+    try {
+      const r = await fetch(path, { cache: "no-store" });
+      if (!r.ok) return null;
+      return await r.text();
+    } catch (e) { return null; }
   }
 
-  function labelMatchup(ev) {
+  function parseLines(linesText) {
+    // lines.csv headers: GameID,HomeSpread,Total
+    const rows = parseCSV(linesText);
+    const map = new Map(); // GameID -> { homeSpread, total }
+    rows.forEach(r => {
+      const gid = String(r.GameID || "").trim();
+      const hs = Number(r.HomeSpread);
+      const tot = Number(r.Total);
+      if (!gid || Number.isNaN(hs) || Number.isNaN(tot)) return;
+      map.set(gid, { homeSpread: hs, total: tot });
+    });
+    return map;
+  }
+
+  function eventToInfo(ev) {
     const comp = ev.competitions?.[0];
     const teams = comp?.competitors || [];
     const away = teams.find(t => t.homeAway === "away");
     const home = teams.find(t => t.homeAway === "home");
-    return `${away?.team?.displayName || "Away"} @ ${home?.team?.displayName || "Home"}`;
+
+    const awayName = away?.team?.displayName || "Away";
+    const homeName = home?.team?.displayName || "Home";
+
+    const awayScore = Number(away?.score ?? NaN);
+    const homeScore = Number(home?.score ?? NaN);
+
+    const isFinal = comp?.status?.type?.completed === true;
+    const winnerTeam = isFinal ? (teams.find(t => t.winner === true)?.team?.displayName || "") : "";
+
+    return { awayName, homeName, awayScore, homeScore, isFinal, winnerTeam };
   }
 
-  function getAdvWinnerIfFinal(ev) {
-    const comp = ev.competitions?.[0];
-    const status = comp?.status?.type;
-    const isFinal = status?.completed === true;
-    if (!isFinal) return { isFinal: false, advWinner: "" };
-
-    const teams = comp?.competitors || [];
-    const winner = teams.find(t => t.winner === true);
-    return { isFinal: true, advWinner: winner?.team?.displayName || "" };
+  function matchupLabel(info) {
+    return `${info.awayName} @ ${info.homeName}`;
   }
 
-  function buildEmptyShell() {
-    theadEl.innerHTML = `
-      <tr><th class="name">Entrant</th></tr>
-      <tr><td class="pending">Results</td></tr>
-      <tr><th class="name">Entrant</th></tr>
-    `;
-    tbodyEl.innerHTML = "";
+  function computeATSWinner(info, homeSpread) {
+    const adjHome = info.homeScore + homeSpread;
+    if (adjHome > info.awayScore) return info.homeName;
+    if (adjHome < info.awayScore) return info.awayName;
+    return "Push";
   }
 
-  // Builds: matchup header row, results row (Adv/ATS/OU), subheader row (Adv/ATS/OU)
-  function buildHeadersFromGames(games) {
-    // Row 1: matchup headers
-    let row1 = `<tr><th class="name" rowspan="3">Entrant</th>`;
-    games.forEach(g => { row1 += `<th colspan="3">${labelMatchup(g)}</th>`; });
+  function computeOUResult(info, total) {
+    const sum = info.homeScore + info.awayScore;
+    if (sum > total) return "Over";
+    if (sum < total) return "Under";
+    return "Push";
+  }
+
+  function buildHeaders(matchups) {
+    // Row 1: matchups
+    let row1 = `<tr><th class="name" rowspan="3">Name</th>`;
+    matchups.forEach(m => row1 += `<th colspan="3">${m}</th>`);
     row1 += `</tr>`;
 
-    // Row 2: results row (aligned with picks)
+    // Row 2: results row (aligned)
     let row2 = `<tr>`;
-    games.forEach((g, idx) => {
+    for (let i = 1; i <= 6; i++) {
       row2 += `
-        <td class="pending" id="res_adv_${idx}">TBD</td>
-        <td class="pending" id="res_ats_${idx}">TBD</td>
-        <td class="pending" id="res_ou_${idx}">TBD</td>
+        <td class="pending" id="res_adv_${i}">TBD</td>
+        <td class="pending" id="res_ats_${i}">TBD</td>
+        <td class="pending" id="res_ou_${i}">TBD</td>
       `;
-    });
+    }
     row2 += `</tr>`;
 
     // Row 3: subheaders
     let row3 = `<tr>`;
-    games.forEach(() => { row3 += `<th>Adv</th><th>Spread</th><th>O/U</th>`; });
+    for (let i = 1; i <= 6; i++) row3 += `<th>Adv</th><th>Spread</th><th>O/U</th>`;
     row3 += `</tr>`;
 
     theadEl.innerHTML = row1 + row2 + row3;
   }
 
-  // Fill results row (currently: Adv only when final; ATS/OU will be wired later)
-  function fillResultsRow() {
-    wcGames.forEach((ev, idx) => {
-      const info = gameById.get(String(ev.id));
-      const advCell = document.getElementById(`res_adv_${idx}`);
-      const atsCell = document.getElementById(`res_ats_${idx}`);
-      const ouCell  = document.getElementById(`res_ou_${idx}`);
+  function setResultsCell(id, text, cls) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.className = cls || "";
+  }
 
-      if (!advCell || !atsCell || !ouCell) return;
-
-      if (info?.isFinal) {
-        advCell.textContent = info.advWinner || "Final";
-        advCell.classList.remove("pending");
-      } else {
-        advCell.textContent = "TBD";
-        advCell.classList.add("pending");
+  function renderResults(gameIds, eventsById, linesById) {
+    for (let i = 1; i <= 6; i++) {
+      const gid = gameIds[i-1];
+      const ev = eventsById.get(gid);
+      if (!gid || !ev) {
+        setResultsCell(`res_adv_${i}`, "TBD", "pending");
+        setResultsCell(`res_ats_${i}`, "TBD", "pending");
+        setResultsCell(`res_ou_${i}`,  "TBD", "pending");
+        continue;
       }
 
-      // Placeholders until we add lines (spread/total)
-      atsCell.textContent = "TBD";
-      ouCell.textContent = "TBD";
-      atsCell.classList.add("pending");
-      ouCell.classList.add("pending");
-    });
+      const info = eventToInfo(ev);
+
+      if (!info.isFinal) {
+        setResultsCell(`res_adv_${i}`, "TBD", "pending");
+        setResultsCell(`res_ats_${i}`, "TBD", "pending");
+        setResultsCell(`res_ou_${i}`,  "TBD", "pending");
+        continue;
+      }
+
+      setResultsCell(`res_adv_${i}`, info.winnerTeam || "Final", "");
+
+      const line = linesById.get(gid);
+      if (!line || Number.isNaN(info.homeScore) || Number.isNaN(info.awayScore)) {
+        setResultsCell(`res_ats_${i}`, "Line missing", "pending");
+        setResultsCell(`res_ou_${i}`,  "Line missing", "pending");
+        continue;
+      }
+
+      const atsWinner = computeATSWinner(info, line.homeSpread);
+      const ouRes = computeOUResult(info, line.total);
+
+      setResultsCell(`res_ats_${i}`, atsWinner, "");
+      setResultsCell(`res_ou_${i}`,  ouRes, "");
+    }
   }
 
-  function groupPicksByName(rows) {
-    const byName = new Map(); // name -> Map(GameID -> row)
-    rows.forEach(r => {
-      const name = (r.Name || "").trim();
-      const gid = (r.GameID || "").trim();
-      if (!name || !gid) return;
-      if (!byName.has(name)) byName.set(name, new Map());
-      byName.get(name).set(gid, r);
-    });
-    return byName;
+  function cellClassForPick(pick, correct, isFinal) {
+    if (!isFinal) return "pending";
+    if (correct === "Push") return "push";
+    if (!pick) return "wrong";
+    return norm(pick) === norm(correct) ? "correct" : "wrong";
   }
 
-  function renderPicksGrid(pickRows) {
+  function renderGrid(pickRows, gameIds, eventsById, linesById) {
     tbodyEl.innerHTML = "";
 
-    const byName = groupPicksByName(pickRows);
-    const names = Array.from(byName.keys()).sort((a,b) => a.localeCompare(b));
+    // Sort entrants
+    const rows = pickRows
+      .filter(r => String(r.Name || "").trim() !== "")
+      .sort((a,b) => String(a.Name||"").localeCompare(String(b.Name||"")));
 
-    names.forEach(name => {
+    rows.forEach(r => {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td class="name">${name}</td>`;
+      tr.innerHTML = `<td class="name">${String(r.Name||"").trim()}</td>`;
 
-      wcGames.forEach(ev => {
-        const gid = String(ev.id);
-        const pick = byName.get(name).get(gid);
+      for (let i = 1; i <= 6; i++) {
+        const gid = gameIds[i-1];
+        const ev = gid ? eventsById.get(gid) : null;
 
-        const advPick = (pick?.PickAdvancing || "").trim();
-        const atsPick = (pick?.PickATS || "").trim();
-        const ouPick  = (pick?.PickOU || "").trim();
+        const advPick = String(r[`PickAdvancing${i}`] || "").trim();
+        const atsPick = String(r[`PickATS${i}`] || "").trim();
+        const ouPick  = String(r[`Pick OU${i}`] || "").trim(); // NOTE: space is required
 
-        const info = gameById.get(gid);
-        const isFinal = info?.isFinal === true;
-        const advWinner = (info?.advWinner || "").trim();
+        if (!gid || !ev) {
+          tr.insertAdjacentHTML("beforeend", `
+            <td class="pending">${advPick}</td>
+            <td class="pending">${atsPick}</td>
+            <td class="pending">${ouPick}</td>
+          `);
+          continue;
+        }
 
-        // Adv cell coloring (works now)
-        const advClass = !isFinal ? "pending"
-          : (advPick && advPick === advWinner ? "correct" : "wrong");
+        const info = eventToInfo(ev);
 
-        // ATS / OU pending for now (until we add lines)
-        const atsClass = "pending";
-        const ouClass  = "pending";
+        // Adv is always based on winner
+        const advClass = cellClassForPick(advPick, info.winnerTeam, info.isFinal);
+
+        // ATS / OU need lines
+        let atsClass = "pending", ouClass = "pending";
+        if (info.isFinal) {
+          const line = linesById.get(gid);
+          if (line && !Number.isNaN(info.homeScore) && !Number.isNaN(info.awayScore)) {
+            const atsWinner = computeATSWinner(info, line.homeSpread);
+            const ouRes = computeOUResult(info, line.total);
+
+            atsClass = cellClassForPick(atsPick, atsWinner, true);
+            ouClass  = cellClassForPick(ouPick,  ouRes, true);
+          }
+        }
 
         tr.insertAdjacentHTML("beforeend", `
-          <td class="${advClass}">${advPick || ""}</td>
-          <td class="${atsClass}">${atsPick || ""}</td>
-          <td class="${ouClass}">${ouPick || ""}</td>
+          <td class="${advClass}">${advPick}</td>
+          <td class="${atsClass}">${atsPick}</td>
+          <td class="${ouClass}">${ouPick}</td>
         `);
-      });
+      }
 
       tbodyEl.appendChild(tr);
     });
   }
 
-  // Load games + build header shell
-  async function initGames() {
-    buildEmptyShell();
-    msgEl.textContent = "Loading Wild Card games…";
+  function extractGameIdsWide(pickRows) {
+    // Take first row that has GameID1 populated; assumes GameID1..6 are the same for all entrants
+    const first = pickRows.find(r => String(r.GameID1 || "").trim() !== "");
+    if (!first) return ["","","","","",""];
+    const ids = [];
+    for (let i = 1; i <= 6; i++) ids.push(String(first[`GameID${i}`] || "").trim());
+    return ids;
+  }
 
-    const data = await fetchJsonWithFallback(SCOREBOARD_URLS);
-    wcGames = getWildCardEvents(data);
+  async function main() {
+    // Load picks + lines (repo-controlled)
+    const picksText = await fetchTextOrNull("wildcard_picks.csv");
+    const linesText = await fetchTextOrNull("lines.csv");
 
-    if (wcGames.length === 0) {
-      msgEl.textContent = "Wild Card games not posted yet.";
+    if (!picksText) {
+      msgEl.textContent = "Missing wildcard_picks.csv";
+      buildHeaders(["Game 1","Game 2","Game 3","Game 4","Game 5","Game 6"]);
       return;
     }
 
-    // Build lookup map
-    gameById = new Map();
-    wcGames.forEach(ev => {
-      const { isFinal, advWinner } = getAdvWinnerIfFinal(ev);
-      gameById.set(String(ev.id), {
-        matchup: labelMatchup(ev),
-        isFinal,
-        advWinner
-      });
+    const pickRows = parseCSV(picksText);
+    const gameIds = extractGameIdsWide(pickRows);
+
+    // Load live scoreboard
+    msgEl.textContent = "Loading games…";
+    const data = await fetchJsonWithFallback(SCOREBOARD_URLS);
+
+    // Index events by id
+    const events = data.events || [];
+    const eventsById = new Map();
+    events.forEach(ev => { if (ev?.id) eventsById.set(String(ev.id), ev); });
+
+    // Build matchup labels (from live event if found; otherwise placeholders)
+    const matchups = gameIds.map((gid, idx) => {
+      const ev = gid ? eventsById.get(gid) : null;
+      if (!ev) return `Game ${idx+1}`;
+      return matchupLabel(eventToInfo(ev));
     });
+    buildHeaders(matchups);
 
-    buildHeadersFromGames(wcGames);
-    fillResultsRow();
-  msgEl.textContent = `Wild Card games loaded: ${wcGames.length}. Loading wildcard_picks.csv…`;
+    const linesById = linesText ? parseLines(linesText) : new Map();
+    renderResults(gameIds, eventsById, linesById);
+    renderGrid(pickRows, gameIds, eventsById, linesById);
 
-try {
-  const picksText = await fetch("wildcard_picks.csv", { cache: "no-store" }).then(r => {
-    if (!r.ok) throw new Error("picks missing");
-    return r.text();
-  });
-  const rows = parseCSV(picksText);
-  renderPicksGrid(rows);
-  msgEl.textContent = `Wild Card games loaded: ${wcGames.length}. Picks loaded from wildcard_picks.csv.`;
-} catch (e) {
-  msgEl.textContent = `Wild Card games loaded: ${wcGames.length}. Upload wildcard_picks.csv to the repo or use the file picker above.`;
-}
+    const missing = [];
+    if (!linesText) missing.push("lines.csv");
+    msgEl.textContent = missing.length ? `Loaded picks. Missing: ${missing.join(", ")}` : "Loaded picks and lines.";
   }
 
-  // CSV file input handler
-  fileEl.addEventListener("change", (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const rows = parseCSV(String(reader.result || ""));
-      renderPicksGrid(rows);
-    };
-    reader.readAsText(file);
-  });
-
-  initGames().catch(err => {
+  main().catch(err => {
     console.error(err);
-    msgEl.textContent = "Could not load games right now.";
-    buildEmptyShell();
+    msgEl.textContent = "Could not load data right now.";
+    buildHeaders(["Game 1","Game 2","Game 3","Game 4","Game 5","Game 6"]);
   });
 </script>
-
 </body>
 </html>
