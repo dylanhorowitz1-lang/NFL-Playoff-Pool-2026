@@ -1,9 +1,105 @@
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><title>Super Bowl Predictions</title></head>
+<head>
+  <meta charset="utf-8" />
+  <title>Super Bowl Predictions</title>
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #000; padding: 6px; text-align: center; }
+    th.name, td.name { text-align: left; font-weight: bold; white-space: nowrap; }
+  </style>
+</head>
 <body>
   <h1>Super Bowl Predictions</h1>
-  <p>Once predictions are in, this page will show AFC/NFC + Champion picks.</p>
   <p><a href="index.html">Home</a></p>
+
+  <div style="margin: 10px 0;">
+    <label><b>Load predictions CSV:</b></label>
+    <input type="file" id="csvFile" accept=".csv" />
+    <span style="font-size:12px;opacity:.85;">
+      CSV headers: Name,Email,AFCChampion,NFCChampion,SuperBowlChampion
+    </span>
+  </div>
+
+  <div id="msg" style="margin: 8px 0;"></div>
+
+  <table id="predTable">
+    <thead>
+      <tr>
+        <th class="name">Entrant</th>
+        <th>AFC Champion</th>
+        <th>NFC Champion</th>
+        <th>Super Bowl Champion</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+<script>
+  const msgEl = document.getElementById("msg");
+  const tbodyEl = document.getElementById("tbody");
+  const fileEl = document.getElementById("csvFile");
+
+  function parseCSV(text) {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(",").map(h => h.trim());
+    return lines.slice(1).filter(Boolean).map(line => {
+      const cols = line.split(",").map(c => c.trim());
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = cols[i] ?? "");
+      return obj;
+    });
+  }
+
+  function render(rows) {
+    tbodyEl.innerHTML = "";
+
+    rows
+      .filter(r => (r.Name || "").trim() !== "")
+      .sort((a,b) => (a.Name || "").localeCompare(b.Name || ""))
+      .forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="name">${(r.Name || "").trim()}</td>
+          <td>${(r.AFCChampion || "").trim()}</td>
+          <td>${(r.NFCChampion || "").trim()}</td>
+          <td>${(r.SuperBowlChampion || "").trim()}</td>
+        `;
+        tbodyEl.appendChild(tr);
+      });
+  }
+
+  async function tryAutoLoad() {
+    msgEl.textContent = "Loading superbowl_picks.csv…";
+    try {
+      const text = await fetch("superbowl_picks.csv", { cache: "no-store" }).then(r => {
+        if (!r.ok) throw new Error("missing");
+        return r.text();
+      });
+      const rows = parseCSV(text);
+      render(rows);
+      msgEl.textContent = "Loaded superbowl_picks.csv.";
+    } catch (e) {
+      msgEl.textContent = "Upload superbowl_picks.csv to the repo or use the file picker above.";
+    }
+  }
+
+  fileEl.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const rows = parseCSV(String(reader.result || ""));
+      render(rows);
+      msgEl.textContent = "Loaded from uploaded file.";
+    };
+    reader.readAsText(file);
+  });
+
+  tryAutoLoad();
+</script>
+
 </body>
 </html>
