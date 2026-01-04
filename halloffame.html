@@ -51,20 +51,47 @@
       background: linear-gradient(180deg, rgba(17,26,51,.75), rgba(15,23,48,.65));
       box-shadow: var(--shadow);padding:14px;overflow-x:auto;
     }
-    table { 
-      border-collapse: collapse; 
-      width: 100%; 
-      min-width: 720px; 
-      table-layout: fixed;
-      table { border: 1px solid rgba(255,255,255,.25); }
-    }
-    th.year, td.year { width: 15%; }
-    th.place, td.place { width: 28.333%; 
-    th.year, td.year { width: 15%; text-align: center; 
-    }
-    th { background: rgba(15,23,48,.95); position: sticky; top: 0; z-index: 2; }
-    td.left { text-align:left; font-weight:400; white-space:nowrap; }
-    .note{color:var(--muted);font-size:12px;margin-top:10px}
+   table{
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 720px;
+  table-layout: fixed;
+  border: 1px solid rgba(255,255,255,.25); /* outer outline */
+}
+
+th, td{
+  border: 1px solid rgba(255,255,255,.18);
+  padding: 8px;
+  text-align: center;
+}
+
+th{ 
+  background: rgba(15,23,48,.95);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+th.year, td.year{
+  width: 15%;
+  text-align: center; /* center the years */
+}
+
+th.place, td.place{
+  width: 28.333%;
+}
+
+td.left{
+  text-align: left;
+  font-weight: 400; /* not bold */
+  white-space: nowrap;
+}
+
+.note{
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 10px;
+}
   </style>
 </head>
 <body>
