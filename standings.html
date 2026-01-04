@@ -2,48 +2,124 @@
 <html>
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Standings</title>
   <style>
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #000; padding: 6px; text-align: center; }
+    :root{
+      --bg:#0b1020;
+      --card:#111a33;
+      --card2:#0f1730;
+      --text:#e8ecff;
+      --muted:#a9b3da;
+      --accent:#5eead4;
+      --border: rgba(255,255,255,.12);
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 500px at 20% -10%, rgba(94,234,212,.18), transparent 60%),
+                  radial-gradient(900px 500px at 100% 0%, rgba(99,102,241,.22), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:28px 16px 44px}
+    .top{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
+      padding:18px 18px 10px;border:1px solid var(--border);border-radius:18px;background:rgba(17,26,51,.55);
+      box-shadow: var(--shadow); backdrop-filter: blur(10px);
+    }
+    h1{margin:0;font-size:28px;letter-spacing:.2px}
+    .sub{margin:6px 0 0;color:var(--muted);max-width:860px;line-height:1.45}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border:1px solid var(--border);border-radius:999px;
+      color:var(--muted);font-size:12px;background:rgba(15,23,48,.55)
+    }
+    .nav{
+      margin-top:12px;
+      display:flex;gap:10px;flex-wrap:wrap;
+    }
+    .btn{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:10px 12px;border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(15,23,48,.65);
+      color:var(--text);
+      text-decoration:none;
+      transition: transform .12s ease, border-color .12s ease;
+    }
+    .btn:hover{transform: translateY(-1px);border-color: rgba(94,234,212,.45)}
+    .card{
+      margin-top:18px;
+      border:1px solid var(--border);
+      border-radius:18px;
+      background: linear-gradient(180deg, rgba(17,26,51,.75), rgba(15,23,48,.65));
+      box-shadow: var(--shadow);
+      padding:14px;
+      overflow-x:auto;
+    }
+
+    /* Table (kept, lightly themed) */
+    table { border-collapse: collapse; width: 100%; min-width: 1050px; }
+    th, td { border: 1px solid rgba(255,255,255,.18); padding: 6px; text-align: center; }
     th.name, td.name { text-align: left; font-weight: bold; white-space: nowrap; }
-    .small { font-size: 12px; opacity: 0.85; }
+    thead th { position: sticky; top: 0; background: rgba(15,23,48,.95); z-index: 2; }
+
+    #msg { color: var(--muted); font-size: 12px; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h1>Standings</h1>
-  <p><a href="index.html">Home</a></p>
-  <div id="msg" class="small" style="margin: 8px 0;"></div>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Standings</h1>
+        <p class="sub">Scores update when games are final. Picks load from round CSVs. Lines load from <b>lines.csv</b>.</p>
+        <div class="nav">
+          <a class="btn" href="index.html">Home</a>
+          <a class="btn" href="wildcard.html">Wild Card Picks</a>
+          <a class="btn" href="superbowl.html">Super Bowl Predictions</a>
+          <a class="btn" href="rules.html">Rules</a>
+        </div>
+      </div>
+      <div class="pill">Manual refresh</div>
+    </div>
 
-  <table id="tbl">
-    <thead>
-      <tr>
-        <th rowspan="2">Rank</th>
-        <th rowspan="2" class="name">Entrant</th>
+    <div id="msg"></div>
 
-        <th colspan="4">Wild Card Round</th>
-        <th colspan="4">Divisional Round</th>
-        <th colspan="4">Conference Championships</th>
-        <th colspan="7">Super Bowl</th>
+    <div class="card">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th rowspan="2">Rank</th>
+            <th rowspan="2" class="name">Entrant</th>
 
-        <th rowspan="2">Total</th>
-        <th rowspan="2">Tie-breaker</th>
-      </tr>
+            <th colspan="4">Wild Card Round</th>
+            <th colspan="4">Divisional Round</th>
+            <th colspan="4">Conference Championships</th>
+            <th colspan="7">Super Bowl</th>
 
-      <tr>
-        <th>Adv</th><th>Spread</th><th>O/U</th><th>Total WC</th>
-        <th>Adv</th><th>Spread</th><th>O/U</th><th>Total DIV</th>
-        <th>Adv</th><th>Spread</th><th>O/U</th><th>Total CONF</th>
+            <th rowspan="2">Total</th>
+            <th rowspan="2">Tie-breaker</th>
+          </tr>
 
-        <th>Adv</th><th>Spread</th><th>O/U</th>
-        <th>AFC</th><th>NFC</th><th>SB Champ</th><th>Total SB</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
+          <tr>
+            <th>Adv</th><th>Spread</th><th>O/U</th><th>Total WC</th>
+            <th>Adv</th><th>Spread</th><th>O/U</th><th>Total DIV</th>
+            <th>Adv</th><th>Spread</th><th>O/U</th><th>Total CONF</th>
+
+            <th>Adv</th><th>Spread</th><th>O/U</th>
+            <th>AFC</th><th>NFC</th><th>SB Champ</th><th>Total SB</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
 
 <script>
-  // ESPN scoreboard via proxy fallback
   const SCOREBOARD_URLS = [
     "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(
       "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
@@ -53,7 +129,6 @@
     )
   ];
 
-  // Scoring (your rules)
   const SC = {
     WC:   { adv: 3,    ats: 2,   ou: 1   },
     DIV:  { adv: 4.5,  ats: 3,   ou: 1.5 },
@@ -115,7 +190,6 @@
   }
 
   function parseLines(linesText) {
-    // lines.csv: GameID,HomeSpread,Total
     const rows = parseCSV(linesText);
     const map = new Map();
     rows.forEach(r => {
@@ -136,7 +210,6 @@
 
     const awayName = away?.team?.displayName || "Away";
     const homeName = home?.team?.displayName || "Home";
-
     const awayScore = Number(away?.score ?? NaN);
     const homeScore = Number(home?.score ?? NaN);
 
@@ -146,8 +219,7 @@
     return { awayName, homeName, awayScore, homeScore, isFinal, winnerTeam, name: (ev.name || ev.shortName || "") };
   }
 
-  function computeATSWinnerAndMargin(info, homeSpread) {
-    // homeMargin = (homeScore + homeSpread) - awayScore
+  function computeATSWinnerAndHomeMargin(info, homeSpread) {
     const homeMargin = (info.homeScore + homeSpread) - info.awayScore;
     let winner = "Push";
     if (homeMargin > 0) winner = info.homeName;
@@ -167,7 +239,7 @@
     if (!p) return "";
     if (p === norm(homeName)) return "home";
     if (p === norm(awayName)) return "away";
-    return ""; // unknown
+    return "";
   }
 
   function extractGameIdsWide(row, nGames) {
@@ -176,34 +248,34 @@
     return ids;
   }
 
-  function scoreRound(picksRows, nGames, roundKey, weights, eventsById, linesById, standings) {
-    // standings[name] fields to fill:
-    // { wc_adv, wc_ats, wc_ou, wc_total, ... } etc.
-    const prefix = roundKey.toLowerCase(); // wc/div/conf/sb
+  function ensureEntrant(standings, name) {
+    if (standings.has(name)) return;
+    standings.set(name, {
+      name,
+      wc_adv:0,wc_ats:0,wc_ou:0,wc_total:0,
+      div_adv:0,div_ats:0,div_ou:0,div_total:0,
+      conf_adv:0,conf_ats:0,conf_ou:0,conf_total:0,
+      sb_adv:0,sb_ats:0,sb_ou:0,
+      sb_afc:0,sb_nfc:0,sb_champ:0,sb_total:0,
+      total:0,
+      tiebreaker:0
+    });
+  }
 
+  function scoreRound(picksRows, nGames, prefix, weights, eventsById, linesById, standings) {
     picksRows.forEach(r => {
       const name = String(r.Name || "").trim();
       if (!name) return;
 
-      if (!standings.has(name)) {
-        standings.set(name, {
-          name,
-          wc_adv:0,wc_ats:0,wc_ou:0,wc_total:0,
-          div_adv:0,div_ats:0,div_ou:0,div_total:0,
-          conf_adv:0,conf_ats:0,conf_ou:0,conf_total:0,
-          sb_adv:0,sb_ats:0,sb_ou:0,
-          sb_afc:0,sb_nfc:0,sb_champ:0,sb_total:0,
-          total:0,
-          tiebreaker:0
-        });
-      }
-
+      ensureEntrant(standings, name);
       const s = standings.get(name);
+
       const gameIds = extractGameIdsWide(r, nGames);
 
       for (let i = 1; i <= nGames; i++) {
         const gid = gameIds[i-1];
         if (!gid) continue;
+
         const ev = eventsById.get(gid);
         const line = linesById.get(gid);
         if (!ev || !line) continue;
@@ -213,71 +285,50 @@
 
         const advPick = String(r[`PickAdvancing${i}`] || "").trim();
         const atsPick = String(r[`PickATS${i}`] || "").trim();
-        const ouPick  = String(r[`Pick OU${i}`] || "").trim(); // note: space
+        const ouPick  = String(r[`Pick OU${i}`] || "").trim();
 
-        // Adv
         if (norm(advPick) && norm(advPick) === norm(info.winnerTeam)) s[`${prefix}_adv`] += weights.adv;
 
-        // ATS + tie-breaker
         if (!Number.isNaN(info.homeScore) && !Number.isNaN(info.awayScore)) {
-          const { atsWinner, homeMargin } = computeATSWinnerAndMargin(info, line.homeSpread);
+          const { atsWinner, homeMargin } = computeATSWinnerAndHomeMargin(info, line.homeSpread);
 
-          // Determine if ATS pick is home/away by team name
-          const side = pickSide(atsPick, info.homeName, info.awayName);
-
-          // Correct ATS?
-          if (atsWinner === "Push") {
-            // no points; no tiebreaker
-          } else {
+          if (atsWinner !== "Push") {
+            const side = pickSide(atsPick, info.homeName, info.awayName);
             const correctSide = (norm(atsWinner) === norm(info.homeName)) ? "home" : "away";
+
             if (side && side === correctSide) {
-              s[`${prefix}_ats`] += weights.ats; // correct
-              // tiebreaker add 0
+              s[`${prefix}_ats`] += weights.ats;
             } else {
-              // tie-breaker miss amount:
-              // if picked home: miss = max(0, -homeMargin)
-              // if picked away: miss = max(0, homeMargin)
+              // Tie-breaker miss amount (ATS pick only)
               let miss = 0;
               if (side === "home") miss = Math.max(0, -homeMargin);
               else if (side === "away") miss = Math.max(0, homeMargin);
-              else {
-                // unknown entry -> treat as wrong; miss can't be computed reliably; use abs(homeMargin) as worst-case
-                miss = Math.abs(homeMargin);
-              }
+              else miss = Math.abs(homeMargin);
               s.tiebreaker += miss;
             }
           }
 
-          // O/U
           const ouRes = computeOU(info, line.total);
           if (ouRes !== "Push" && norm(ouPick) && norm(ouPick) === norm(ouRes)) s[`${prefix}_ou`] += weights.ou;
         }
       }
 
-      // Round total
-      if (roundKey === "WC")   s.wc_total   = s.wc_adv + s.wc_ats + s.wc_ou;
-      if (roundKey === "DIV")  s.div_total  = s.div_adv + s.div_ats + s.div_ou;
-      if (roundKey === "CONF") s.conf_total = s.conf_adv + s.conf_ats + s.conf_ou;
-      if (roundKey === "SB")   s.sb_total   = s.sb_adv + s.sb_ats + s.sb_ou + s.sb_afc + s.sb_nfc + s.sb_champ;
+      if (prefix === "wc")   s.wc_total   = s.wc_adv + s.wc_ats + s.wc_ou;
+      if (prefix === "div")  s.div_total  = s.div_adv + s.div_ats + s.div_ou;
+      if (prefix === "conf") s.conf_total = s.conf_adv + s.conf_ats + s.conf_ou;
     });
   }
 
   function getChampWinners(eventsById) {
-    // Best-effort: detect by event name containing AFC/NFC Championship / Super Bowl
-    let afcWinner = "";
-    let nfcWinner = "";
-    let sbWinner  = "";
-
+    let afcWinner = "", nfcWinner = "", sbWinner = "";
     for (const ev of eventsById.values()) {
       const info = eventInfo(ev);
       if (!info.isFinal) continue;
-
       const title = norm(info.name);
       if (!afcWinner && title.includes("afc") && title.includes("championship")) afcWinner = info.winnerTeam;
       if (!nfcWinner && title.includes("nfc") && title.includes("championship")) nfcWinner = info.winnerTeam;
       if (!sbWinner  && title.includes("super bowl")) sbWinner = info.winnerTeam;
     }
-
     return { afcWinner, nfcWinner, sbWinner };
   }
 
@@ -286,19 +337,7 @@
       const name = String(r.Name || "").trim();
       if (!name) return;
 
-      if (!standings.has(name)) {
-        standings.set(name, {
-          name,
-          wc_adv:0,wc_ats:0,wc_ou:0,wc_total:0,
-          div_adv:0,div_ats:0,div_ou:0,div_total:0,
-          conf_adv:0,conf_ats:0,conf_ou:0,conf_total:0,
-          sb_adv:0,sb_ats:0,sb_ou:0,
-          sb_afc:0,sb_nfc:0,sb_champ:0,sb_total:0,
-          total:0,
-          tiebreaker:0
-        });
-      }
-
+      ensureEntrant(standings, name);
       const s = standings.get(name);
 
       const pickAFC = String(r.AFCChampion || "").trim();
@@ -309,35 +348,25 @@
       const nfcCorrect = champs.nfcWinner && norm(pickNFC) === norm(champs.nfcWinner);
       const sbCorrect  = champs.sbWinner  && norm(pickSB)  === norm(champs.sbWinner);
 
-      s.sb_afc   = afcCorrect ? SC.PRED.afc : 0;
-      s.sb_nfc   = nfcCorrect ? SC.PRED.nfc : 0;
-      const both = (champs.afcWinner && champs.nfcWinner && afcCorrect && nfcCorrect) ? SC.PRED.both : 0;
+      s.sb_afc = afcCorrect ? SC.PRED.afc : 0;
+      s.sb_nfc = nfcCorrect ? SC.PRED.nfc : 0;
+      s._sb_both_bonus = (champs.afcWinner && champs.nfcWinner && afcCorrect && nfcCorrect) ? SC.PRED.both : 0;
       s.sb_champ = sbCorrect ? SC.PRED.champ : 0;
-
-      // "Both teams" bonus
-      // (included in SB Total)
-      // We'll add it into sb_total below
-      s._sb_both_bonus = both;
     });
   }
 
   function finalizeTotals(standings) {
     standings.forEach(s => {
-      const sbPredTotal = (s.sb_afc || 0) + (s.sb_nfc || 0) + (s._sb_both_bonus || 0) + (s.sb_champ || 0);
-      const sbGameTotal = (s.sb_adv || 0) + (s.sb_ats || 0) + (s.sb_ou || 0);
+      const sbPredTotal = (s.sb_afc||0) + (s.sb_nfc||0) + (s._sb_both_bonus||0) + (s.sb_champ||0);
+      const sbGameTotal = (s.sb_adv||0) + (s.sb_ats||0) + (s.sb_ou||0);
       s.sb_total = sbGameTotal + sbPredTotal;
-
-      s.total = (s.wc_total || 0) + (s.div_total || 0) + (s.conf_total || 0) + (s.sb_total || 0);
-
-      // clean temp
+      s.total = (s.wc_total||0) + (s.div_total||0) + (s.conf_total||0) + (s.sb_total||0);
       delete s._sb_both_bonus;
     });
   }
 
   function renderTable(rows) {
-    // sort: total desc, tiebreaker asc
     rows.sort((a,b) => (b.total - a.total) || (a.tiebreaker - b.tiebreaker) || a.name.localeCompare(b.name));
-
     tbodyEl.innerHTML = "";
     rows.forEach((r, idx) => {
       const tr = document.createElement("tr");
@@ -371,11 +400,7 @@
       fetchTextOrNull("superbowl_predictions.csv")
     ]);
 
-    if (!linesText) {
-      msgEl.textContent = "Missing lines.csv";
-      return;
-    }
-
+    if (!linesText) { msgEl.textContent = "Missing lines.csv"; return; }
     const linesById = parseLines(linesText);
 
     const scoreboard = await fetchJsonWithFallback(SCOREBOARD_URLS);
@@ -384,16 +409,15 @@
 
     const standings = new Map();
 
-    if (wcText)   scoreRound(parseCSV(wcText),   6, "WC",   SC.WC,   eventsById, linesById, standings);
-    if (divText)  scoreRound(parseCSV(divText),  4, "DIV",  SC.DIV,  eventsById, linesById, standings);
-    if (confText) scoreRound(parseCSV(confText), 2, "CONF", SC.CONF, eventsById, linesById, standings);
-    if (sbText)   scoreRound(parseCSV(sbText),   1, "SB",   SC.SB,   eventsById, linesById, standings);
+    if (wcText)   scoreRound(parseCSV(wcText),   6, "wc",   SC.WC,   eventsById, linesById, standings);
+    if (divText)  scoreRound(parseCSV(divText),  4, "div",  SC.DIV,  eventsById, linesById, standings);
+    if (confText) scoreRound(parseCSV(confText), 2, "conf", SC.CONF, eventsById, linesById, standings);
+    if (sbText)   scoreRound(parseCSV(sbText),   1, "sb",   SC.SB,   eventsById, linesById, standings);
 
     const champs = getChampWinners(eventsById);
     if (predText) scorePredictions(parseCSV(predText), champs, standings);
 
     finalizeTotals(standings);
-
     renderTable(Array.from(standings.values()));
 
     const missing = [];
