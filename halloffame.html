@@ -51,8 +51,15 @@
       background: linear-gradient(180deg, rgba(17,26,51,.75), rgba(15,23,48,.65));
       box-shadow: var(--shadow);padding:14px;overflow-x:auto;
     }
-    table { border-collapse: collapse; width: 100%; min-width: 720px; }
-    th, td { border: 1px solid rgba(255,255,255,.18); padding: 8px; text-align: center; }
+    table { 
+      border-collapse: collapse; 
+      width: 100%; 
+      min-width: 720px; 
+      table-layout: fixed;
+}
+
+    th.year, td.year { width: 15%; }
+    th.place, td.place { width: 28.333%; }
     th { background: rgba(15,23,48,.95); position: sticky; top: 0; z-index: 2; }
     td.left { text-align:left; font-weight:700; white-space:nowrap; }
     .note{color:var(--muted);font-size:12px;margin-top:10px}
@@ -80,72 +87,72 @@
         <thead>
           <tr>
           <th>Year</th>  
-          <th class="gold">🥇 1st Place</th>
-          <th class="silver">🥈 2nd Place</th>
-          <th class="bronze">🥉 3rd Place</th>
+          <th class="gold place">🥇 1st Place</th>
+          <th class="silver place">🥈 2nd Place</th>
+          <th class="bronze place">🥉 3rd Place</th>
           </tr>
         </thead>
         <tbody>
           <!-- Replace these rows with your real history -->
           <tr>
             <td>2025</td>
-            <td class="left">Caitlin Fabian</td>
-            <td class="left">Dylan Horowitz</td>
-            <td class="left">Simon Gerszberg</td>
+            <td class="left place">Caitlin Fabian</td>
+            <td class="left place">Dylan Horowitz</td>
+            <td class="left place">Simon Gerszberg</td>
           </tr>
           <tr>
             <td>2024</td>
-            <td class="left">Mike Dorn</td>
-            <td class="left">Baby Doc</td>
-            <td class="left">Sam Adams</td>
+            <td class="left place">Mike Dorn</td>
+            <td class="left place">Baby Doc</td>
+            <td class="left place">Sam Adams</td>
           </tr>
           <tr>
             <td>2023</td>
-            <td class="left">JE Negron</td>
-            <td class="left">Andrew Gee</td>
-            <td class="left">Ajay Balakrishnan</td>
+            <td class="left place">JE Negron</td>
+            <td class="left place">Andrew Gee</td>
+            <td class="left place">Ajay Balakrishnan</td>
           </tr>
             <tr>
             <td>2022</td>
-            <td class="left">Joey Antosy</td>
-            <td class="left">Joe "The Under" Tesoriero</td>
-            <td class="left">Richard Gerszberg</td>
+            <td class="left place">Joey Antosy</td>
+            <td class="left place">Joe "The Under" Tesoriero</td>
+            <td class="left place">Richard Gerszberg</td>
           </tr>
             <tr>
             <td>2021</td>
-            <td class="left">PJ20</td>
-            <td class="left">Cathy Fabian</td>
-            <td class="left">Paul T</td>
+            <td class="left place">PJ20</td>
+            <td class="left place">Cathy Fabian</td>
+            <td class="left place">Paul T</td>
           </tr>
             <tr>
             <td>2020</td>
-            <td class="left">Darn Old</td>
-            <td class="left">Patrick Dorn</td>
-            <td class="left">Brock Winter/Paul Downey</td>
+            <td class="left place">Darn Old</td>
+            <td class="left place">Patrick Dorn</td>
+            <td class="left place">Brock Winter/Paul Downey</td>
           </tr>
             <tr>
             <td>2019</td>
-            <td class="left">Roy Horowitz</td>
-            <td class="left">Alanna Horowitz</td>
-            <td class="left">John Giordano</td>
+            <td class="left place">Roy Horowitz</td>
+            <td class="left place">Alanna Horowitz</td>
+            <td class="left place">John Giordano</td>
           </tr>
             <tr>
             <td>2018</td>
-            <td class="left">David Arbia</td>
-            <td class="left">Tommy D</td>
-            <td class="left">Paul T</td>
+            <td class="left place">David Arbia</td>
+            <td class="left place">Tommy D</td>
+            <td class="left place">Paul T</td>
           </tr>
             <tr>
             <td>2017</td>
-            <td class="left">Andrea Pace</td>
-            <td class="left">Scott Bracken</td>
-            <td class="left">Patrick Dorn</td>
+            <td class="left place">Andrea Pace</td>
+            <td class="left place">Scott Bracken</td>
+            <td class="left place">Patrick Dorn</td>
           </tr>
             <tr>
             <td>2016</td>
-            <td class="left">Dylan Horowitz</td>
-            <td class="left">Kevin Dorn</td>
-            <td class="left">Patrick Dorn</td>
+            <td class="left place">Dylan Horowitz</td>
+            <td class="left place">Kevin Dorn</td>
+            <td class="left place">Patrick Dorn</td>
           </tr>
         </tbody>
       </table>
