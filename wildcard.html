@@ -3,154 +3,81 @@
 <head>
   <meta charset="utf-8" />
   <title>Wild Card Picks</title>
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #000; padding: 6px; text-align: center; }
+    th.game { font-weight: bold; }
+    td.name { text-align: left; font-weight: bold; }
+    .correct { background: #c6efce; }   /* green */
+    .wrong   { background: #ffc7ce; }   /* red */
+    .pending { background: #e7e6e6; }   /* gray */
+  </style>
 </head>
 <body>
   <h1>Wild Card Picks</h1>
   <p><a href="index.html">Home</a></p>
-  <div id="status"></div>
-  <div id="games"></div>
 
-  <script>
-    const statusEl = document.getElementById("status");
-    const gamesEl = document.getElementById("games");
+  <table id="picksTable">
+    <thead>
+      <!-- Row 1: Game headers (matchups) -->
+      <tr>
+        <th rowspan="2">Entrant</th>
 
-    // CORS-safe ESPN scoreboard URL
-    const scoreboardUrl =
-      "https://api.allorigins.win/raw?url=" +
-      encodeURIComponent("https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard");
+        <!-- Each game takes 3 columns -->
+        <th class="game" colspan="3">Bills @ Chiefs</th>
+        <th class="game" colspan="3">Ravens @ Texans</th>
+        <th class="game" colspan="3">Cowboys @ Eagles</th>
+        <th class="game" colspan="3">Packers @ Lions</th>
+        <th class="game" colspan="3">Rams @ 49ers</th>
+        <th class="game" colspan="3">Browns @ Bengals</th>
+      </tr>
 
-    function parseCSV(text) {
-      const lines = text.trim().split(/\r?\n/);
-      if (lines.length < 2) return [];
-      const headers = lines[0].split(",").map(h => h.trim());
-      return lines.slice(1).filter(Boolean).map(line => {
-        const cols = line.split(",").map(c => c.trim());
-        const obj = {};
-        headers.forEach((h, i) => obj[h] = cols[i] ?? "");
-        return obj;
-      });
-    }
+      <!-- Row 2: Results row (under each game header) -->
+      <tr>
+        <!-- Game 1 results -->
+        <td class="pending" colspan="3">
+          <b>Results:</b> <span id="g1_results">TBD</span>
+        </td>
+        <!-- Game 2 results -->
+        <td class="pending" colspan="3">
+          <b>Results:</b> <span id="g2_results">TBD</span>
+        </td>
+        <td class="pending" colspan="3"><b>Results:</b> <span id="g3_results">TBD</span></td>
+        <td class="pending" colspan="3"><b>Results:</b> <span id="g4_results">TBD</span></td>
+        <td class="pending" colspan="3"><b>Results:</b> <span id="g5_results">TBD</span></td>
+        <td class="pending" colspan="3"><b>Results:</b> <span id="g6_results">TBD</span></td>
+      </tr>
 
-    function getWildCardEvents(data) {
-      const events = data.events || [];
-      // Best-effort filter: postseason week 1 is typically Wild Card.
-      return events.filter(ev => {
-        const isPostseason = (ev.season?.type === 3) || (String(ev.season?.slug || "").includes("post"));
-        const isWeek1 = (ev.week?.number === 1);
-        return isPostseason && isWeek1;
-      });
-    }
+      <!-- Row 3: Sub-headers -->
+      <tr>
+        <th>Entrant</th>
 
-    function eventLabel(ev) {
-      const comp = ev.competitions?.[0];
-      const teams = comp?.competitors || [];
-      const away = teams.find(t => t.homeAway === "away");
-      const home = teams.find(t => t.homeAway === "home");
-      const status = comp?.status?.type?.shortDetail || "";
-      const awayScore = away?.score ?? "";
-      const homeScore = home?.score ?? "";
-      return {
-        matchup: `${away?.team?.displayName || "Away"} @ ${home?.team?.displayName || "Home"}`,
-        status,
-        score: (awayScore !== "" || homeScore !== "") ? `${awayScore} - ${homeScore}` : ""
-      };
-    }
+        <th>Adv</th><th>Spread</th><th>O/U</th>
+        <th>Adv</th><th>Spread</th><th>O/U</th>
+        <th>Adv</th><th>Spread</th><th>O/U</th>
+        <th>Adv</th><th>Spread</th><th>O/U</th>
+        <th>Adv</th><th>Spread</th><th>O/U</th>
+        <th>Adv</th><th>Spread</th><th>O/U</th>
+      </tr>
+    </thead>
 
-    function renderGameSection(ev, picksByGame) {
-      const { matchup, status, score } = eventLabel(ev);
-      const gameId = String(ev.id);
+    <tbody>
+      <!-- Example row (we will replace with CSV later) -->
+      <tr>
+        <td class="name">Alice</td>
 
-      const section = document.createElement("section");
-      section.style.marginBottom = "24px";
+        <td class="pending">TBD</td><td class="pending">TBD</td><td class="pending">TBD</td>
+        <td class="pending">TBD</td><td class="pending">TBD</td><td class="pending">TBD</td>
+        <td class="pending">TBD</td><td class="pending">TBD</td><td class="pending">TBD</td>
+        <td class="pending">TBD</td><td class="pending">TBD</td><td class="pending">TBD</td>
+        <td class="pending">TBD</td><td class="pending">TBD</td><td class="pending">TBD</td>
+        <td class="pending">TBD</td><td class="pending">TBD</td><td class="pending">TBD</td>
+      </tr>
+    </tbody>
+  </table>
 
-      const h2 = document.createElement("h2");
-      h2.textContent = matchup;
-      section.appendChild(h2);
-
-      const meta = document.createElement("div");
-      meta.textContent = `GameID: ${gameId}  |  ${status}${score ? "  |  " + score : ""}`;
-      section.appendChild(meta);
-
-      const picks = picksByGame.get(gameId) || [];
-
-      if (picks.length === 0) {
-        const p = document.createElement("p");
-        p.textContent = "No picks uploaded yet for this game.";
-        section.appendChild(p);
-        return section;
-      }
-
-      const table = document.createElement("table");
-      table.border = "1";
-      table.cellPadding = "6";
-
-      const thead = document.createElement("thead");
-      thead.innerHTML = `
-        <tr>
-          <th>Name</th>
-          <th>Advancing</th>
-          <th>Spread Winner</th>
-          <th>Over/Under</th>
-        </tr>`;
-      table.appendChild(thead);
-
-      const tbody = document.createElement("tbody");
-      picks.forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${r.Name || ""}</td>
-          <td>${r.PickAdvancing || ""}</td>
-          <td>${r.PickATS || ""}</td>
-          <td>${r.PickOU || ""}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody);
-
-      section.appendChild(table);
-      return section;
-    }
-
-    async function main() {
-      statusEl.textContent = "Loading Wild Card games…";
-
-      // Load picks (OK if empty/missing; we’ll just show “No picks”)
-let picksRows = [];
-        // If file isn't there yet, that's fine.
-      }
-
-      // Group picks by GameID
-      const picksByGame = new Map();
-      picksRows.forEach(r => {
-        const gid = String(r.GameID || "");
-        if (!gid) return;
-        if (!picksByGame.has(gid)) picksByGame.set(gid, []);
-        picksByGame.get(gid).push(r);
-      });
-
-      // Load live games
-      const data = await fetch(scoreboardUrl, { cache: "no-store" }).then(r => r.json());
-      const wcEvents = getWildCardEvents(data);
-
-      gamesEl.innerHTML = "";
-
-      if (wcEvents.length === 0) {
-        statusEl.textContent = "Wild Card games are not available yet.";
-        return;
-      }
-
-      statusEl.textContent = `Showing Wild Card games (${wcEvents.length}).`;
-
-      // Render up to 6 (Wild Card round is 6 games)
-      wcEvents.slice(0, 6).forEach(ev => {
-        gamesEl.appendChild(renderGameSection(ev, picksByGame));
-      });
-    }
-
-    main().catch(err => {
-      console.error(err);
-      statusEl.textContent = "Could not load Wild Card games right now.";
-    });
-  </script>
+  <p style="margin-top:10px;">
+    Green = correct, Red = incorrect, Gray = pending.
+  </p>
 </body>
 </html>
