@@ -74,30 +74,35 @@
     return `${away?.team?.displayName || "Away"} @ ${home?.team?.displayName || "Home"}`;
   }
 
-  function buildHeadersFromGames(games) {
-    // Row 1: matchup headers (colspan=3 each)
-    let row1 = `<tr><th class="name" rowspan="2">Entrant</th>`;
-    games.forEach(g => {
-      row1 += `<th colspan="3">${labelMatchup(g)}</th>`;
-    });
-    row1 += `</tr>`;
+ function buildHeadersFromGames(games) {
+  // Row 1: matchup headers (colspan=3 each)
+  let row1 = `<tr><th class="name" rowspan="3">Entrant</th>`;
+  games.forEach(g => {
+    row1 += `<th colspan="3">${labelMatchup(g)}</th>`;
+  });
+  row1 += `</tr>`;
 
-    // Row 2: results row under each matchup header
-    let row2 = `<tr>`;
-    games.forEach((g, idx) => {
-      row2 += `<td class="pending" colspan="3"><b>Results:</b> <span id="res_${idx}">TBD</span></td>`;
-    });
-    row2 += `</tr>`;
+  // Row 2: "Results" label + 3 cells per game
+  let row2 = `<tr>`;
+  games.forEach((g, idx) => {
+    row2 += `
+      <td class="pending"><b>Results</b></td>
+      <td class="pending"><span id="res_ats_${idx}">TBD</span></td>
+      <td class="pending"><span id="res_ou_${idx}">TBD</span></td>
+    `;
+  });
+  row2 += `</tr>`;
 
-    // Row 3: subheaders (Adv/Spread/O-U)
-    let row3 = `<tr><th class="name">Entrant</th>`;
-    games.forEach(() => {
-      row3 += `<th>Adv</th><th>Spread</th><th>O/U</th>`;
-    });
-    row3 += `</tr>`;
+  // Row 3: subheaders (Adv/Spread/O-U)
+  let row3 = `<tr>`;
+  games.forEach(() => {
+    row3 += `<th>Adv</th><th>Spread</th><th>O/U</th>`;
+  });
+  row3 += `</tr>`;
 
-    theadEl.innerHTML = row1 + row2 + row3;
-  }
+  theadEl.innerHTML = row1 + row2 + row3;
+}
+
 
   async function main() {
     buildEmptyShell(); // always show something
