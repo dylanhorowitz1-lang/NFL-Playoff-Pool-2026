@@ -1,58 +1,276 @@
-<!doctype html>
+<<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Games (Live IDs)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NFL Playoff Scores</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#111a33;
+      --card2:#0f1730;
+      --text:#e8ecff;
+      --muted:#a9b3da;
+      --accent:#5eead4;
+      --border: rgba(255,255,255,.12);
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 500px at 20% -10%, rgba(94,234,212,.18), transparent 60%),
+                  radial-gradient(900px 500px at 100% 0%, rgba(99,102,241,.22), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:28px 16px 44px}
+    .top{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
+      padding:18px 18px 10px;border:1px solid var(--border);border-radius:18px;background:rgba(17,26,51,.55);
+      box-shadow: var(--shadow); backdrop-filter: blur(10px);
+    }
+    h1{margin:0;font-size:28px;letter-spacing:.2px}
+    .sub{margin:6px 0 0;color:var(--muted);max-width:860px;line-height:1.45}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border:1px solid var(--border);border-radius:999px;
+      color:var(--muted);font-size:12px;background:rgba(15,23,48,.55)
+    }
+    .nav{
+      margin-top:12px;
+      display:flex;gap:10px;flex-wrap:wrap;
+    }
+    .btn{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:10px 12px;border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(15,23,48,.65);
+      color:var(--text);
+      text-decoration:none;
+      transition: transform .12s ease, border-color .12s ease;
+    }
+    .btn:hover{transform: translateY(-1px);border-color: rgba(94,234,212,.45)}
+    .section{margin-top:18px}
+    .section h2{margin:0 0 10px;font-size:18px;color:var(--accent)}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+    .game{
+      grid-column: span 6;
+      border:1px solid var(--border);
+      border-radius:18px;
+      background: linear-gradient(180deg, rgba(17,26,51,.75), rgba(15,23,48,.65));
+      box-shadow: var(--shadow);
+      padding:14px 14px 12px;
+    }
+    .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+    .status{color:var(--muted);font-size:12px}
+    .teams{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+    .team{display:flex;justify-content:space-between;gap:10px}
+    .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:75%}
+    .score{font-weight:800;font-size:18px}
+    .meta{margin-top:10px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .winner .name{font-weight:800}
+    .empty{
+      border:1px solid var(--border);
+      border-radius:18px;
+      background: rgba(17,26,51,.35);
+      padding:14px;
+      color:var(--muted);
+    }
+    @media (max-width: 760px){
+      .game{grid-column: span 12;}
+      h1{font-size:24px}
+    }
+  </style>
 </head>
 <body>
-  <h1>Games (Live IDs)</h1>
-  <p>Use the GameID values (eventId) in your picks.csv.</p>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>NFL Playoff Scores</h1>
+        <p class="sub">Playoff games only. Manual refresh.</p>
+        <div class="nav">
+          <a class="btn" href="index.html">Home</a>
+          <a class="btn" href="standings.html">Standings</a>
+          <a class="btn" href="wildcard.html">Wild Card Picks</a>
+          <a class="btn" href="superbowl.html">Super Bowl Predictions</a>
+          <a class="btn" href="rules.html">Rules</a>
+        </div>
+      </div>
+      <div class="pill" id="stamp">Loading…</div>
+    </div>
 
-  <table border="1" cellpadding="6" id="tbl">
-    <thead>
-      <tr>
-        <th>GameID (eventId)</th>
-        <th>Matchup</th>
-        <th>Status</th>
-        <th>Score</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+    <div id="content" class="section"></div>
+  </div>
 
-  <script>
-    const url = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
+<script>
+  const SCOREBOARD_URLS = [
+    "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(
+      "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
+    ),
+    "https://corsproxy.io/?" + encodeURIComponent(
+      "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
+    )
+  ];
 
-    fetch(url)
-      .then(r => r.json())
-      .then(data => {
-        const tbody = document.querySelector("#tbl tbody");
-        const events = data.events || [];
+  const stampEl = document.getElementById("stamp");
+  const contentEl = document.getElementById("content");
 
-        events.forEach(ev => {
-          const comp = ev.competitions?.[0];
-          const teams = comp?.competitors || [];
-          const away = teams.find(t => t.homeAway === "away");
-          const home = teams.find(t => t.homeAway === "home");
+  async function fetchJsonWithFallback(urls) {
+    for (const u of urls) {
+      try {
+        const r = await fetch(u, { cache: "no-store" });
+        if (!r.ok) continue;
+        return await r.json();
+      } catch (e) {}
+    }
+    throw new Error("Failed to fetch scoreboard");
+  }
 
-          const status = comp?.status?.type?.shortDetail || "";
-          const awayScore = away?.score ?? "";
-          const homeScore = home?.score ?? "";
+  function isPlayoffEvent(ev) {
+    const isPostseason = (ev.season?.type === 3) || String(ev.season?.slug || "").includes("post");
+    return !!isPostseason;
+  }
 
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${ev.id}</td>
-            <td>${away?.team?.displayName || "Away"} @ ${home?.team?.displayName || "Home"}</td>
-            <td>${status}</td>
-            <td>${awayScore} - ${homeScore}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      })
-      .catch(err => {
-        document.body.insertAdjacentHTML("beforeend", "<p>Could not load games.</p>");
-        console.error(err);
+  function roundLabelFromWeek(weekNum) {
+    // NFL postseason: commonly 1=WC, 2=DIV, 3=CONF, 4=SB (best-effort)
+    if (weekNum === 1) return "Wild Card Round";
+    if (weekNum === 2) return "Divisional Round";
+    if (weekNum === 3) return "Conference Championships";
+    if (weekNum === 4) return "Super Bowl";
+    return `Playoffs (Week ${weekNum || "?"})`;
+  }
+
+  function parseEvent(ev) {
+    const comp = ev.competitions?.[0];
+    const teams = comp?.competitors || [];
+    const away = teams.find(t => t.homeAway === "away");
+    const home = teams.find(t => t.homeAway === "home");
+
+    const awayName = away?.team?.displayName || "Away";
+    const homeName = home?.team?.displayName || "Home";
+
+    const awayScore = away?.score ?? "";
+    const homeScore = home?.score ?? "";
+
+    const isFinal = comp?.status?.type?.completed === true;
+    const statusText = comp?.status?.type?.shortDetail || comp?.status?.type?.description || "";
+    const startISO = ev.date || comp?.date || "";
+    const weekNum = ev.week?.number || null;
+
+    const awayWinner = away?.winner === true;
+    const homeWinner = home?.winner === true;
+
+    return {
+      id: ev.id,
+      weekNum,
+      awayName, homeName,
+      awayScore, homeScore,
+      awayWinner, homeWinner,
+      isFinal,
+      statusText,
+      startISO
+    };
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return "";
+    try {
+      return new Date(iso).toLocaleString("en-US", {
+        timeZone: "America/New_York",
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
       });
-  </script>
+    } catch {
+      return "";
+    }
+  }
+
+  function gameCard(g) {
+    const awayCls = g.awayWinner ? "team winner" : "team";
+    const homeCls = g.homeWinner ? "team winner" : "team";
+    return `
+      <div class="game">
+        <div class="row">
+          <div class="status">${g.isFinal ? "Final" : (g.statusText || "Scheduled")}</div>
+          <div class="status">${fmtTime(g.startISO)}</div>
+        </div>
+
+        <div class="teams">
+          <div class="${awayCls}">
+            <div class="name">${g.awayName}</div>
+            <div class="score">${g.awayScore}</div>
+          </div>
+          <div class="${homeCls}">
+            <div class="name">${g.homeName}</div>
+            <div class="score">${g.homeScore}</div>
+          </div>
+        </div>
+
+        <div class="meta">
+          <div>${g.statusText || ""}</div>
+          <div>GameID: ${g.id}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderGroups(groups) {
+    if (groups.length === 0) {
+      contentEl.innerHTML = `<div class="empty">No playoff games available yet.</div>`;
+      return;
+    }
+
+    contentEl.innerHTML = groups.map(gr => `
+      <div class="section">
+        <h2>${gr.label}</h2>
+        <div class="grid">
+          ${gr.games.map(gameCard).join("")}
+        </div>
+      </div>
+    `).join("");
+  }
+
+  async function main() {
+    stampEl.textContent = "Loading…";
+    const data = await fetchJsonWithFallback(SCOREBOARD_URLS);
+
+    const events = (data.events || []).filter(isPlayoffEvent).map(parseEvent);
+
+    // group by week number
+    const map = new Map();
+    for (const ev of events) {
+      const wk = ev.weekNum || 0;
+      if (!map.has(wk)) map.set(wk, []);
+      map.get(wk).push(ev);
+    }
+
+    // sort games within group by start time
+    for (const [wk, arr] of map.entries()) {
+      arr.sort((a,b) => (a.startISO || "").localeCompare(b.startISO || ""));
+    }
+
+    // build sorted groups by week number
+    const weeks = Array.from(map.keys()).sort((a,b) => a-b);
+    const groups = weeks.map(wk => ({
+      week: wk,
+      label: roundLabelFromWeek(wk),
+      games: map.get(wk)
+    }));
+
+    renderGroups(groups);
+    stampEl.textContent = "Updated: " + new Date().toLocaleTimeString("en-US", { timeZone: "America/New_York" });
+  }
+
+  main().catch(err => {
+    console.error(err);
+    stampEl.textContent = "Error";
+    contentEl.innerHTML = `<div class="empty">Could not load playoff scores right now.</div>`;
+  });
+</script>
 </body>
 </html>
