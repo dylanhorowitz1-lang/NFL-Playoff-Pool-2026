@@ -407,12 +407,14 @@ const SCOREBOARD_URLS = (() => {
 
     // Always load scoreboard so we can show matchup names even before picks arrive
     let eventsById = new Map();
-    try {
-    const data = await fetchJsonWithFallback(SCOREBOARD_URLS);
-      (data.events || []).forEach(ev => { if (ev?.id) eventsById.set(String(ev.id), ev); });
-      } catch (e) {
-      console.error("Scoreboard fetch failed:", e);
-  // continue — page will still load using lines.csv + picks, just without matchup names
+    try { const data = await fetchJsonWithFallback(SCOREBOARD_URLS);
+      (data.events || []).forEach(ev => {
+    if (ev?.id) eventsById.set(String(ev.id), ev);
+      const compId = ev?.competitions?.[0]?.id;
+    if (compId) eventsById.set(String(compId), ev);
+      });
+} catch (e) {
+  console.error("Scoreboard fetch failed:", e);
 }
 
     // Choose GameIDs:
