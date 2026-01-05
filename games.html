@@ -89,7 +89,6 @@
     <div class="top">
       <div>
         <h1>NFL Playoff Scores</h1>
-        <p class="sub">Playoff games only.</p>
         <div class="nav">
           <a class="btn" href="index.html">Home</a>
           <a class="btn" href="standings.html">Standings</a>
@@ -162,7 +161,6 @@ function isPlayoffEvent(ev) {
     if (weekNum === 1) return "Wild Card Round";
     if (weekNum === 2) return "Divisional Round";
     if (weekNum === 3) return "Conference Championships";
-    if (weekNum === 4) return "Pro Bowl";
     if (weekNum === 5) return "Super Bowl";
     return `Playoffs (Week ${weekNum || "?"})`;
   }
