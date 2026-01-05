@@ -153,11 +153,11 @@ function isPlayoffEvent(ev) {
   }
 
   function roundLabelFromWeek(weekNum) {
-    // NFL postseason: commonly 1=WC, 2=DIV, 3=CONF, 4=SB (best-effort)
+    // NFL postseason: commonly 1=WC, 2=DIV, 3=CONF, 5=SB (best-effort)
     if (weekNum === 1) return "Wild Card Round";
     if (weekNum === 2) return "Divisional Round";
     if (weekNum === 3) return "Conference Championships";
-    if (weekNum === 4) return "Super Bowl";
+    if (weekNum === 5) return "Super Bowl";
     return `Playoffs (Week ${weekNum || "?"})`;
   }
 
