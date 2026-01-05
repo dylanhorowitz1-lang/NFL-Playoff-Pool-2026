@@ -214,27 +214,57 @@
     return "Push";
   }
 
-  function buildHeaders(matchups) {
-    let row1 = `<tr><th class="name" rowspan="3">Name</th>`;
-    matchups.forEach(m => row1 += `<th colspan="3">${m}</th>`);
-    row1 += `</tr>`;
+  ffunction buildHeaders(matchups, gameIds, eventsById, linesById) {
+  // Row 1: Matchups
+  let row1 = `<tr><th class="name" rowspan="4">Name</th>`;
+  matchups.forEach(m => row1 += `<th colspan="3">${m}</th>`);
+  row1 += `</tr>`;
 
-    let row2 = `<tr>`;
-    for (let i = 1; i <= 6; i++) {
-      row2 += `
-        <td class="pending" id="res_adv_${i}">TBD</td>
-        <td class="pending" id="res_ats_${i}">TBD</td>
-        <td class="pending" id="res_ou_${i}">TBD</td>
-      `;
+  // Row 2: Spread / O-U (static info)
+  let row2 = `<tr>`;
+  gameIds.forEach(gid => {
+    const ev = eventsById.get(gid);
+    const line = linesById.get(gid);
+
+    if (!ev || !line) {
+      row2 += `<td colspan="3">Lines TBD</td>`;
+      return;
     }
-    row2 += `</tr>`;
 
-    let row3 = `<tr>`;
-    for (let i = 1; i <= 6; i++) row3 += `<th>Adv</th><th>Spread</th><th>O/U</th>`;
-    row3 += `</tr>`;
+    const info = eventToInfo(ev);
+    const favorite =
+      line.homeSpread < 0
+        ? `${info.homeName} ${line.homeSpread}`
+        : `${info.awayName} -${line.homeSpread}`;
 
-    theadEl.innerHTML = row1 + row2 + row3;
+    row2 += `
+      <td colspan="3">
+        Spread: ${favorite} &nbsp; | &nbsp; O/U: ${line.total}
+      </td>
+    `;
+  });
+  row2 += `</tr>`;
+
+  // Row 3: Correct results (populate after games finish)
+  let row3 = `<tr>`;
+  for (let i = 1; i <= 6; i++) {
+    row3 += `
+      <td class="pending" id="res_adv_${i}">TBD</td>
+      <td class="pending" id="res_ats_${i}">TBD</td>
+      <td class="pending" id="res_ou_${i}">TBD</td>
+    `;
   }
+  row3 += `</tr>`;
+
+  // Row 4: Pick labels
+  let row4 = `<tr>`;
+  for (let i = 1; i <= 6; i++) {
+    row4 += `<th>Adv</th><th>Spread</th><th>O/U</th>`;
+  }
+  row4 += `</tr>`;
+
+  theadEl.innerHTML = row1 + row2 + row3 + row4;
+}
 
   function setResultsCell(id, text, cls) {
     const el = document.getElementById(id);
