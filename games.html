@@ -145,11 +145,17 @@ const SCOREBOARD_URLS = (() => {
 function isPlayoffEvent(ev) {
   const isPostseason =
     (ev.season?.type === 3) ||
-    String(ev.season?.slug || "").includes("post");
+    String(ev.season?.slug || "").toLowerCase().includes("post");
 
-  const name = String(ev.name || "").toLowerCase();
+  // Combine likely fields where "Pro Bowl" might appear
+  const text = [
+    ev.name,
+    ev.shortName,
+    ev.competitions?.[0]?.shortName,
+    ev.competitions?.[0]?.notes?.[0]?.headline
+  ].map(x => String(x || "")).join(" ").toLowerCase();
 
-  if (name.includes("pro bowl")) return false;
+  if (text.includes("pro bowl")) return false;
 
   return isPostseason;
   }
