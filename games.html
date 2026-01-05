@@ -116,7 +116,7 @@ function yyyymmdd(d){
 function buildScoreboardUrl(){
   const start = new Date();          // today
   const end = new Date();
-  end.setDate(start.getDate() + 14); // next 14 days
+  end.setDate(start.getDate() + 45); // next 45 days
 
   const range = `${yyyymmdd(start)}-${yyyymmdd(end)}`;
   return `${BASE_SCOREBOARD}?dates=${range}`;
