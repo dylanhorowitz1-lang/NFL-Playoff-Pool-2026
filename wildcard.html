@@ -90,39 +90,13 @@
   </div>
 
 <script>
-  // Pull a window so future Wild Card games appear (40 days from fixed Jan 5, 2026 ET)
- const BASE_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
-
-function yyyymmdd(d){
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,"0");
-  const day = String(d.getDate()).padStart(2,"0");
-  return `${y}${m}${day}`;
-}
-
-function buildScoreboardUrl(){
-  const start = new Date();
-  const end = new Date();
-  end.setDate(start.getDate() + 7);
-  const range = `${yyyymmdd(start)}-${yyyymmdd(end)}`;
-  return `${BASE_SCOREBOARD}?dates=${range}`;
-}
-
-const SCOREBOARD_URLS = (() => {
-  const url = buildScoreboardUrl();
-  return [
-    "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(url),
-    "https://corsproxy.io/?" + encodeURIComponent(url),
-    "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
-  ];
-})();
-
   const msgEl = document.getElementById("msg");
   const theadEl = document.getElementById("thead");
   const tbodyEl = document.getElementById("tbody");
 
   function norm(s) { return String(s || "").trim().toLowerCase(); }
 
+  // ---------- CSV parsing ----------
   function splitCSVLine(line) {
     const out = [];
     let cur = "", inQ = false;
@@ -151,17 +125,6 @@ const SCOREBOARD_URLS = (() => {
     });
   }
 
-  async function fetchJsonWithFallback(urls) {
-    for (const u of urls) {
-      try {
-        const r = await fetch(u, { cache: "no-store" });
-        if (!r.ok) continue;
-        return await r.json();
-      } catch (e) {}
-    }
-    throw new Error("Failed to fetch scoreboard");
-  }
-
   async function fetchTextOrNull(path) {
     try {
       const r = await fetch(path, { cache: "no-store" });
@@ -170,7 +133,7 @@ const SCOREBOARD_URLS = (() => {
     } catch (e) { return null; }
   }
 
-  // Parse lines.csv and preserve the 6 GameIDs order from the file
+  // ---------- lines.csv ----------
   function parseLinesWithOrder(linesText) {
     const rows = parseCSV(linesText);
     const map = new Map();
@@ -186,6 +149,42 @@ const SCOREBOARD_URLS = (() => {
     return { map, order };
   }
 
+  // ---------- ESPN per-game fetch (fixes Game 1/2/3 issue) ----------
+  function proxiesFor(url){
+    return [
+      "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(url),
+      "https://corsproxy.io/?" + encodeURIComponent(url),
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
+    ];
+  }
+
+  async function fetchJsonWithFallback(urls){
+    let lastErr = null;
+    for (const u of urls) {
+      try{
+        const r = await fetch(u, { cache: "no-store" });
+        if (!r.ok) continue;
+        return await r.json();
+      } catch(e){ lastErr = e; }
+    }
+    throw (lastErr || new Error("Fetch failed"));
+  }
+
+  async function fetchEventById(gameId){
+    const url = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=" + encodeURIComponent(gameId);
+    const data = await fetchJsonWithFallback(proxiesFor(url));
+    // summary payload typically contains header.competitions[0] (same shape-ish)
+    const comp = data?.header?.competitions?.[0];
+    if (!comp) return null;
+
+    // Create an "event-like" object so our existing code works
+    return {
+      id: String(gameId),
+      competitions: [comp]
+    };
+  }
+
+  // ---------- event helpers ----------
   function eventToInfo(ev) {
     const comp = ev.competitions?.[0];
     const teams = comp?.competitors || [];
@@ -222,17 +221,16 @@ const SCOREBOARD_URLS = (() => {
     return "Push";
   }
 
+  // ---------- rendering ----------
   function buildHeaders(matchups, gameIds, eventsById, linesById) {
-    // Row 1: Matchups
     let row1 = `<tr><th class="name" rowspan="4">Name</th>`;
     matchups.forEach(m => row1 += `<th colspan="3">${m}</th>`);
     row1 += `</tr>`;
 
-    // Row 2: Spread / O-U
     let row2 = `<tr>`;
     gameIds.forEach(gid => {
-      const ev = eventsById.get(gid);
-      const line = linesById.get(gid);
+      const ev = gid ? eventsById.get(gid) : null;
+      const line = gid ? linesById.get(gid) : null;
 
       if (!gid || !ev || !line) {
         row2 += `<td colspan="3">Lines TBD</td>`;
@@ -249,7 +247,6 @@ const SCOREBOARD_URLS = (() => {
     });
     row2 += `</tr>`;
 
-    // Row 3: Correct results
     let row3 = `<tr>`;
     for (let i = 1; i <= 6; i++) {
       row3 += `
@@ -260,7 +257,6 @@ const SCOREBOARD_URLS = (() => {
     }
     row3 += `</tr>`;
 
-    // Row 4: labels
     let row4 = `<tr>`;
     for (let i = 1; i <= 6; i++) row4 += `<th>Adv</th><th>Spread</th><th>O/U</th>`;
     row4 += `</tr>`;
@@ -334,7 +330,7 @@ const SCOREBOARD_URLS = (() => {
 
         const advPick = String(r[`PickAdvancing${i}`] || "").trim();
         const atsPick = String(r[`PickATS${i}`] || "").trim();
-        const ouPick  = String(r[`Pick OU${i}`] || "").trim(); // space required
+        const ouPick  = String(r[`Pick OU${i}`] || "").trim();
 
         if (!gid || !ev) {
           tr.insertAdjacentHTML("beforeend", `
@@ -384,25 +380,13 @@ const SCOREBOARD_URLS = (() => {
     const picksText = await fetchTextOrNull("wildcard_picks.csv");
     const linesText = await fetchTextOrNull("lines.csv");
 
-    // Lines are required to show Spread/O-U row
-    const { map: linesById, order: lineOrder } = linesText ? parseLinesWithOrder(linesText) : { map: new Map(), order: [] };
+    const { map: linesById, order: lineOrder } = linesText
+      ? parseLinesWithOrder(linesText)
+      : { map: new Map(), order: [] };
 
-    // Always load scoreboard so we can show matchup names even before picks arrive
-    const data = await fetchJsonWithFallback(SCOREBOARD_URLS);
-
-    const eventsById = new Map();
-    (data.events || []).forEach(ev => {
-      // index by BOTH ids (some pages use event.id, others use competition.id)
-      if (ev?.id) eventsById.set(String(ev.id), ev);
-      const compId = ev?.competitions?.[0]?.id;
-      if (compId) eventsById.set(String(compId), ev);
-    });
-
-    // Choose GameIDs:
-    // 1) from picks file if present, else 2) from lines.csv order, else blanks
+    // Determine GameIDs (picks first, else lines.csv order)
     let pickRows = [];
     let gameIds = ["","","","","",""];
-
     if (picksText) {
       pickRows = parseCSV(picksText);
       gameIds = extractGameIdsWide(pickRows);
@@ -410,31 +394,39 @@ const SCOREBOARD_URLS = (() => {
       gameIds = lineOrder.slice(0, 6);
     }
 
+    // Fetch each game directly by GameID (reliable)
+    const eventsById = new Map();
+    for (const gid of gameIds) {
+      if (!gid) continue;
+      try {
+        const ev = await fetchEventById(gid);
+        if (ev) eventsById.set(String(gid), ev);
+      } catch (e) {
+        console.error("Failed to fetch event", gid, e);
+      }
+    }
+
     const matchups = gameIds.map((gid, idx) => {
       const ev = gid ? eventsById.get(gid) : null;
-      if (!ev) return `Game ${idx + 1}`;
-      return matchupLabel(eventToInfo(ev));
+      return ev ? matchupLabel(eventToInfo(ev)) : `Game ${idx+1}`;
     });
 
     buildHeaders(matchups, gameIds, eventsById, linesById);
 
     if (!picksText) {
-      msgEl.textContent = "No picks yet (missing wildcard_picks.csv). Showing matchups + lines.";
+      msgEl.textContent = "No picks yet (missing wildcard_picks.csv).";
       return;
     }
 
     renderResults(gameIds, eventsById, linesById);
     renderGrid(pickRows, gameIds, eventsById, linesById);
 
-    msgEl.textContent = linesText
-      ? "Loaded wildcard_picks.csv and lines.csv."
-      : "Loaded picks. Missing lines.csv.";
+    msgEl.textContent = "Loaded.";
   }
 
   main().catch(err => {
     console.error(err);
     msgEl.textContent = "Could not load data right now.";
-    // safe fallback shell
     theadEl.innerHTML = `<tr><th class="name">Name</th></tr>`;
     tbodyEl.innerHTML = ``;
   });
