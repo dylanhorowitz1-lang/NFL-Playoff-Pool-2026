@@ -265,80 +265,60 @@
   }
 
   function buildHeaders(matchups, gameIds, eventsById, linesById) {
- // Row 1: Game matchups
-let row1 = `<tr><th class="name">Game</th>`;
-matchups.forEach((m, idx) => {
-  const sepClass = (idx < matchups.length - 1) ? "sep" : "";
-  row1 += `<th colspan="3" class="${sepClass}">${m}</th>`;
-});
-row1 += `</tr>`;
+    // Row 1: Game matchups
+    let row1 = `<tr><th class="name">Game</th>`;
+    matchups.forEach((m, idx) => {
+      const sepClass = (idx < matchups.length - 1) ? "sep" : "";
+      row1 += `<th colspan="3" class="${sepClass}">${m}</th>`;
+    });
+    row1 += `</tr>`;
 
-// Row 2: Lines
-let row2 = `<tr><th class="name">Lines</th>`;
-gameIds.forEach((gid, idx) => {
-  const sepClass = (idx < gameIds.length - 1) ? "sep" : "";
-  const line = gid ? linesById.get(gid) : null;
-  const ev = gid ? eventsById.get(gid) : null;
+    // Row 2: Lines
+    let row2 = `<tr><th class="name">Lines</th>`;
+    gameIds.forEach((gid, idx) => {
+      const sepClass = (idx < gameIds.length - 1) ? "sep" : "";
+      const line = gid ? linesById.get(gid) : null;
+      const ev = gid ? eventsById.get(gid) : null;
 
-  if (!gid || !line) {
-    row2 += `<td colspan="3" class="${sepClass}">TBD</td>`;
-    return;
-  }
+      if (!gid || !line) {
+        row2 += `<td colspan="3" class="${sepClass}">Lines TBD</td>`;
+        return;
+      }
 
-  let spreadText = `${line.homeSpread}`;
-  if (ev) {
-    const info = eventToInfo(ev);
-    spreadText =
-      line.homeSpread < 0
-        ? `${info.homeName} ${line.homeSpread}`
-        : `${info.awayName} -${line.homeSpread}`;
-  }
+      let spreadText = `HomeSpread: ${line.homeSpread}`;
+      if (ev) {
+        const info = eventToInfo(ev);
+        spreadText =
+          line.homeSpread < 0
+            ? `${info.homeName} ${line.homeSpread}`
+            : `${info.awayName} -${line.homeSpread}`;
+      }
 
-  row2 += `<td colspan="3" class="${sepClass}">
-              Spread: ${spreadText} &nbsp; | &nbsp; O/U: ${line.total}
-           </td>`;
-});
-row2 += `</tr>`;
+      row2 += `<td colspan="3" class="${sepClass}">Spread: ${spreadText} &nbsp; | &nbsp; O/U: ${line.total}</td>`;
+    });
+    row2 += `</tr>`;
 
-// Row 3: Results (label + cells)
-let row3 = `<tr><th class="name">Results</th>`;
-for (let i = 1; i <= 6; i++) {
-  const sepClass = (i < 6) ? "sep" : "";
-  row3 += `
-    <td id="res_adv_${i}" class="pending">TBD</td>
-    <td id="res_ats_${i}" class="pending">TBD</td>
-    <td id="res_ou_${i}"  class="pending ${sepClass}">TBD</td>
-  `;
-}
-row3 += `</tr>`;
-
-// Row 4: Column labels
-let row4 = `<tr><th class="name">Name</th>`;
-for (let i = 1; i <= 6; i++) {
-  const sepClass = (i < 6) ? "sep" : "";
-  row4 += `<th>Adv</th><th>Spread</th><th class="${sepClass}">O/U</th>`;
-}
-row4 += `</tr>`;
-
-    // Row 5: Pick labels
-    let row5 = `<tr>`;
+    // Row 3: Results
+    let row3 = `<tr><th class="name correct-row-label">Results</th>`;
     for (let i = 1; i <= 6; i++) {
-      row5 += `<th>Adv</th><th>Spread</th><th class="sep">O/U</th>`;
+      const sepClass = (i < 6) ? "sep" : "";
+      row3 += `
+        <td class="pending" id="res_adv_${i}">TBD</td>
+        <td class="pending" id="res_ats_${i}">TBD</td>
+        <td class="pending ${sepClass}" id="res_ou_${i}">TBD</td>
+      `;
     }
-    row5 += `</tr>`;
+    row3 += `</tr>`;
 
-    theadEl.innerHTML = row1 + row2 + row3 + row4 + row5;
-
-    // Add IDs to the row4 result cells now that it exists
-    // (We put placeholder TDs above; now assign IDs in order.)
-    const row4El = theadEl.querySelectorAll("tr")[3]; // 0=row1,1=row2,2=row3,3=row4
-    const tds = Array.from(row4El.querySelectorAll("td"));
-    let k = 0;
+    // Row 4: Column labels
+    let row4 = `<tr><th class="name">Name</th>`;
     for (let i = 1; i <= 6; i++) {
-      tds[k++].id = `res_adv_${i}`;
-      tds[k++].id = `res_ats_${i}`;
-      tds[k++].id = `res_ou_${i}`;
+      const sepClass = (i < 6) ? "sep" : "";
+      row4 += `<th>Adv</th><th>Spread</th><th class="${sepClass}">O/U</th>`;
     }
+    row4 += `</tr>`;
+
+    theadEl.innerHTML = row1 + row2 + row3 + row4;
   }
 
   function setResultsCell(id, text, cls) {
@@ -517,4 +497,3 @@ row4 += `</tr>`;
 </script>
 </body>
 </html>
-
