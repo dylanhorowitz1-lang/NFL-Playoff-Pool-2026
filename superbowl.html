@@ -142,21 +142,21 @@
       return await r.text();
     } catch (e) { return null; }
   }
+function render(rows) {
+  tbodyEl.innerHTML = "";
+  rows
+    .filter(r => String(r.Name || "").trim() !== "")
+    .forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="name">${String(r["Name"] || "").trim()}</td>
+        <td>${String(r["AFC Champion"] || "").trim()}</td>
+        <td>${String(r["NFC Champion"] || "").trim()}</td>
+        <td>${String(r["Super Bowl Champion"] || "").trim()}</td>
+      `;
+      tbodyEl.appendChild(tr);
+    });
 
-  function render(rows) {
-    tbodyEl.innerHTML = "";
-    rows
-      .filter(r => String(r.Name || "").trim() !== "")
-      .forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="name">${String(r.Name||"").trim()}</td>
-          <td>${String(r.AFC Champion||"").trim()}</td>
-          <td>${String(r.NFC Champion||"").trim()}</td>
-          <td>${String(r.Super Bowl Champion||"").trim()}</td>
-        `;
-        tbodyEl.appendChild(tr);
-      });
   }
 
   async function main() {
