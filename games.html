@@ -290,6 +290,41 @@ function isPlayoffEvent(ev) {
     stampEl.textContent = "Error";
     contentEl.innerHTML = `<div class="empty">Could not load playoff scores right now.</div>`;
   });
+  // ===== AUTO REFRESH =====
+const AUTO_REFRESH_MS = 60_000; // 60 seconds
+
+let refreshTimer = null;
+
+function startAutoRefresh() {
+  if (refreshTimer) return;
+  refreshTimer = setInterval(() => {
+    if (document.visibilityState === "visible") {
+      main().catch(() => {});
+    }
+  }, AUTO_REFRESH_MS);
+}
+
+function stopAutoRefresh() {
+  if (!refreshTimer) return;
+  clearInterval(refreshTimer);
+  refreshTimer = null;
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") startAutoRefresh();
+  else stopAutoRefresh();
+});
+
+startAutoRefresh();
+
+main().catch(err => {
+  console.error(err);
+  stampEl.textContent = "Error";
+  contentEl.innerHTML = `<div class="empty">Could not load playoff scores right now.</div>`;
+});
+
+// ⬇️ PASTE AUTO-REFRESH CODE HERE ⬇️
+
 </script>
 </body>
 </html>
