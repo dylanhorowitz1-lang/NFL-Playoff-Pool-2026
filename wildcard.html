@@ -27,7 +27,7 @@
       color:var(--text);
       min-height:100vh;
     }
-    .wrap{max-width:1200px;margin:0 auto;padding:28px 16px 44px}
+    .wrap{max-width:1300px;margin:0 auto;padding:28px 16px 44px}
     .top{
       display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
       padding:18px 18px 10px;border:1px solid var(--border);border-radius:18px;background:rgba(17,26,51,.55);
@@ -58,24 +58,30 @@
     table{
       border-collapse: collapse;
       width: 100%;
-      min-width: 1100px;
-      table-layout: fixed; /* helps keep columns even */
+      min-width: 1400px;     /* more room for full team names */
+      table-layout: fixed;   /* keep widths consistent */
     }
+
+    /* Column sizing: Adv + Spread equal, O/U smaller */
+    col.c-name { width: 200px; }
+    col.c-adv  { width: 150px; }
+    col.c-ats  { width: 150px; }
+    col.c-ou   { width: 90px; }
+
     th, td{
       border: 1px solid var(--grid);
       padding: 7px 8px;
       text-align: center;
       vertical-align: middle;
-      white-space: nowrap;            /* stop wrapping */
+      white-space: nowrap;
       overflow: hidden;
-      text-overflow: ellipsis;        /* truncate long names */
+      text-overflow: clip; /* don't add Los... unless absolutely needed */
       font-size: 13px;
     }
     th.name, td.name{
       text-align: left;
       font-weight: 700;
-      white-space: nowrap;
-      width: 180px;
+      width: 200px;
     }
     thead th{
       position: sticky;
@@ -84,7 +90,7 @@
       z-index: 2;
     }
 
-    /* stronger separators between games */
+    /* separators between games */
     .sep{
       border-right: 3px solid var(--sep) !important;
     }
@@ -95,7 +101,7 @@
     .wrong   { background: #7a2b3a; }
     .push    { background: #6b5b1f; }
 
-    /* correct picks label row */
+    /* results row label */
     .correct-row-label{
       text-align:left;
       font-weight:700;
@@ -126,6 +132,17 @@
 
     <div class="card">
       <table id="picksTable">
+        <!-- Enforce column widths: Name + (Adv, Spread, O/U) * 6 -->
+        <colgroup>
+          <col class="c-name">
+          <col class="c-adv"><col class="c-ats"><col class="c-ou">
+          <col class="c-adv"><col class="c-ats"><col class="c-ou">
+          <col class="c-adv"><col class="c-ats"><col class="c-ou">
+          <col class="c-adv"><col class="c-ats"><col class="c-ou">
+          <col class="c-adv"><col class="c-ats"><col class="c-ou">
+          <col class="c-adv"><col class="c-ats"><col class="c-ou">
+        </colgroup>
+
         <thead id="thead"></thead>
         <tbody id="tbody"></tbody>
       </table>
@@ -326,7 +343,6 @@
     if (!el) return;
     el.textContent = text;
     el.className = cls ? cls : "";
-    // keep separator on O/U cells
     if (id.includes("_ou_")) el.classList.add("sep");
   }
 
@@ -376,7 +392,7 @@
     tbodyEl.innerHTML = "";
 
     const rows = pickRows
-      .filter(r => String(r.Name || "").trim() !== ""); // keep CSV order, no sorting
+      .filter(r => String(r.Name || "").trim() !== "");
 
     rows.forEach(r => {
       const tr = document.createElement("tr");
@@ -388,7 +404,7 @@
 
         const advPick = String(r[`PickAdvancing${i}`] || "").trim();
         const atsPick = String(r[`PickATS${i}`] || "").trim();
-        const ouPick  = String(r[`Pick OU${i}`] || "").trim(); // exact header includes space
+        const ouPick  = String(r[`Pick OU${i}`] || "").trim();
 
         if (!gid || !ev) {
           tr.insertAdjacentHTML("beforeend", `
@@ -440,7 +456,6 @@
 
     const { map: linesById, order: lineOrder } = linesText ? parseLinesWithOrder(linesText) : { map: new Map(), order: [] };
 
-    // Always load scoreboard so matchups can show
     const data = await fetchJsonWithFallback(SCOREBOARD_URLS);
 
     const eventsById = new Map();
@@ -450,8 +465,6 @@
       if (compId) eventsById.set(String(compId), ev);
     });
 
-    // Choose GameIDs:
-    // 1) from picks file if present, else 2) from lines.csv order, else blanks
     let pickRows = [];
     let gameIds = ["","","","","",""];
 
@@ -470,7 +483,6 @@
 
     buildHeaders(matchups, gameIds, eventsById, linesById);
 
-    // show lines even if picks missing
     if (!linesText) {
       msgEl.textContent = "Missing lines.csv (spreads/totals).";
     }
@@ -497,3 +509,4 @@
 </script>
 </body>
 </html>
+
