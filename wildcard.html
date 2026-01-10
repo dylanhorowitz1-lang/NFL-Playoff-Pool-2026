@@ -1,242 +1,511 @@
 <!doctype html>
 <html>
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Wild Card Picks</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wild Card Picks</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#111a33;
+      --card2:#0f1730;
+      --text:#e8ecff;
+      --muted:#a9b3da;
+      --accent:#5eead4;
+      --border: rgba(255,255,255,.12);
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --grid: rgba(255,255,255,.18);
+      --sep: rgba(255,255,255,.38);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 500px at 20% -10%, rgba(94,234,212,.18), transparent 60%),
+                  radial-gradient(900px 500px at 100% 0%, rgba(99,102,241,.22), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:28px 16px 44px}
+    .top{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
+      padding:18px 18px 10px;border:1px solid var(--border);border-radius:18px;background:rgba(17,26,51,.55);
+      box-shadow: var(--shadow); backdrop-filter: blur(10px);
+    }
+    h1{margin:0;font-size:28px;letter-spacing:.2px}
+    .sub{margin:6px 0 0;color:var(--muted);max-width:860px;line-height:1.45}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border:1px solid var(--border);border-radius:999px;
+      color:var(--muted);font-size:12px;background:rgba(15,23,48,.55)
+    }
+    .nav{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;}
+    .btn{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:10px 12px;border-radius:12px;border:1px solid var(--border);
+      background: rgba(15,23,48,.65);color:var(--text);text-decoration:none;
+      transition: transform .12s ease, border-color .12s ease;
+    }
+    .btn:hover{transform: translateY(-1px);border-color: rgba(94,234,212,.45)}
+    .card{
+      margin-top:18px;border:1px solid var(--border);border-radius:18px;
+      background: linear-gradient(180deg, rgba(17,26,51,.75), rgba(15,23,48,.65));
+      box-shadow: var(--shadow);padding:14px;overflow-x:auto;
+    }
 
-<style>
-:root{
-  --bg:#0b1020;
-  --card:#111a33;
-  --text:#e8ecff;
-  --muted:#a9b3da;
-  --border: rgba(255,255,255,.15);
-  --sep: rgba(255,255,255,.45);
-}
-*{box-sizing:border-box}
+    /* Table */
+    table{
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 1100px;
+      table-layout: fixed; /* helps keep columns even */
+    }
+    th, td{
+      border: 1px solid var(--grid);
+      padding: 7px 8px;
+      text-align: center;
+      vertical-align: middle;
+      white-space: nowrap;            /* stop wrapping */
+      overflow: hidden;
+      text-overflow: ellipsis;        /* truncate long names */
+      font-size: 13px;
+    }
+    th.name, td.name{
+      text-align: left;
+      font-weight: 700;
+      white-space: nowrap;
+      width: 180px;
+    }
+    thead th{
+      position: sticky;
+      top: 0;
+      background: rgba(15,23,48,.95);
+      z-index: 2;
+    }
 
-body{
-  margin:0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  background: var(--bg);
-  color:var(--text);
-}
+    /* stronger separators between games */
+    .sep{
+      border-right: 3px solid var(--sep) !important;
+    }
 
-.wrap{max-width:1400px;margin:auto;padding:24px}
-.card{
-  background:#111a33;
-  border-radius:16px;
-  padding:14px;
-  overflow-x:auto;
-}
+    /* result colors */
+    .pending { background: #2a3357; }
+    .correct { background: #1f6f4a; }
+    .wrong   { background: #7a2b3a; }
+    .push    { background: #6b5b1f; }
 
-/* TABLE */
-table{
-  border-collapse:collapse;
-  width:100%;
-  min-width:1500px; /* force width so names fit */
-  table-layout:auto; /* allow columns to grow */
-}
-th,td{
-  border:1px solid var(--border);
-  padding:8px 10px;
-  text-align:center;
-  white-space:nowrap;   /* keep team names on one line */
-  font-size:14px;
-}
-th{
-  background:#0f1730;
-}
-td.name, th.name{
-  text-align:left;
-  font-weight:700;
-  min-width:180px;
-}
+    /* correct picks label row */
+    .correct-row-label{
+      text-align:left;
+      font-weight:700;
+      color: var(--muted);
+      background: rgba(15,23,48,.55);
+    }
 
-/* stronger separators between games */
-.sep{
-  border-right:3px solid var(--sep)!important;
-}
-
-/* states */
-.pending{background:#2a3357}
-.correct{background:#1f6f4a}
-.wrong{background:#7a2b3a}
-.push{background:#6b5b1f}
-
-.correct-label{
-  font-weight:700;
-  color:var(--muted);
-  text-align:left;
-  background:#0f1730;
-}
-
-#msg{font-size:12px;color:var(--muted);margin:10px 0}
-</style>
+    #msg { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  </style>
 </head>
-
 <body>
-<div class="wrap">
-  <h1>Wild Card Picks</h1>
-  <div id="msg"></div>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Wild Card Picks</h1>
+        <p class="sub">Matchups and results load automatically. Picks load from <b>wildcard_picks.csv</b>. Lines load from <b>lines.csv</b>.</p>
+        <div class="nav">
+          <a class="btn" href="index.html">Home</a>
+          <a class="btn" href="standings.html">Standings</a>
+          <a class="btn" href="superbowl.html">Super Bowl Predictions</a>
+          <a class="btn" href="games.html">NFL Scores</a>
+        </div>
+      </div>
+      <div class="pill">Manual refresh</div>
+    </div>
 
-  <div class="card">
-    <table>
-      <thead id="thead"></thead>
-      <tbody id="tbody"></tbody>
-    </table>
+    <div id="msg"></div>
+
+    <div class="card">
+      <table id="picksTable">
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
   </div>
-</div>
 
 <script>
-/* ------------------ CONFIG ------------------ */
-const SCOREBOARD_URLS=[
- "https://api.codetabs.com/v1/proxy/?quest="+encodeURIComponent(
-  "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
- )
-];
+  // ESPN scoreboard via proxy fallback (7-day window)
+  const BASE_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 
-/* ------------------ HELPERS ------------------ */
-const norm=s=>String(s||"").trim().toLowerCase();
+  function yyyymmdd(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    return `${y}${m}${day}`;
+  }
 
-async function fetchJson(u){
- for(const x of u){
-  try{
-   const r=await fetch(x,{cache:"no-store"});
-   if(r.ok) return await r.json();
-  }catch{}
- }
- throw "fetch fail";
-}
+  function buildScoreboardUrl(){
+    const start = new Date();
+    const end = new Date();
+    end.setDate(start.getDate() + 7);
+    const range = `${yyyymmdd(start)}-${yyyymmdd(end)}`;
+    return `${BASE_SCOREBOARD}?dates=${range}`;
+  }
 
-async function fetchText(p){
- try{
-  const r=await fetch(p,{cache:"no-store"});
-  if(!r.ok) return null;
-  return await r.text();
- }catch{return null}
-}
+  const SCOREBOARD_URLS = (() => {
+    const url = buildScoreboardUrl();
+    return [
+      "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(url),
+      "https://corsproxy.io/?" + encodeURIComponent(url)
+    ];
+  })();
 
-function parseCSV(t){
- const l=t.replace(/\r/g,"").split("\n").filter(Boolean);
- const h=l[0].split(",");
- return l.slice(1).map(r=>{
-  const o={}; r.split(",").forEach((v,i)=>o[h[i]]=v.trim());
-  return o;
- });
-}
+  const msgEl = document.getElementById("msg");
+  const theadEl = document.getElementById("thead");
+  const tbodyEl = document.getElementById("tbody");
 
-function eventInfo(ev){
- const c=ev.competitions[0];
- const t=c.competitors;
- const a=t.find(x=>x.homeAway==="away");
- const h=t.find(x=>x.homeAway==="home");
- return{
-  away:a.team.displayName,
-  home:h.team.displayName,
-  aScore:+a.score,
-  hScore:+h.score,
-  final:c.status.type.completed,
-  winner:t.find(x=>x.winner)?.team.displayName||""
- };
-}
+  function norm(s) { return String(s || "").trim().toLowerCase(); }
 
-function atsWinner(i,s){
- const m=(i.hScore+s)-i.aScore;
- if(m>0) return i.home;
- if(m<0) return i.away;
- return "Push";
-}
-
-function ouRes(i,t){
- const sum=i.hScore+i.aScore;
- if(sum>t) return "Over";
- if(sum<t) return "Under";
- return "Push";
-}
-
-/* ------------------ BUILD HEADERS ------------------ */
-function buildHeaders(matchups){
- let r1=`<tr><th class="name" rowspan="4">Name</th>`;
- matchups.forEach((m,i)=>r1+=`<th colspan="3"${i<5?' class="sep"':''}>${m}</th>`);
- r1+=`</tr>`;
-
- let r2=`<tr>`;
- matchups.forEach((_,i)=>r2+=`<th>Adv</th><th>Spread</th><th class="sep">O/U</th>`);
- r2+=`</tr>`;
-
- let r3=`<tr>
-   <td class="correct-label">Correct Picks</td>`;
- for(let i=1;i<=6;i++){
-  r3+=`<td id="res_adv_${i}" class="pending">TBD</td>
-        <td id="res_ats_${i}" class="pending">TBD</td>
-        <td id="res_ou_${i}" class="pending sep">TBD</td>`;
- }
- r3+=`</tr>`;
-
- thead.innerHTML=r1+r2+r3;
-}
-
-/* ------------------ MAIN ------------------ */
-(async()=>{
- const msg=document.getElementById("msg");
- const tbody=document.getElementById("tbody");
-
- const picksText=await fetchText("wildcard_picks.csv");
- const linesText=await fetchText("lines.csv");
- if(!picksText||!linesText){msg.textContent="Missing CSV files";return}
-
- const picks=parseCSV(picksText);
- const lines=parseCSV(linesText);
- const lineMap=new Map(lines.map(r=>[r.GameID,{s:+r.HomeSpread,t:+r.Total}]));
-
- const data=await fetchJson(SCOREBOARD_URLS);
- const events=new Map();
- data.events.forEach(e=>events.set(e.id,e));
-
- const gameIds=Array.from(lineMap.keys()).slice(0,6);
- const matchups=gameIds.map(id=>{
-  const ev=events.get(id);
-  if(!ev) return "Game";
-  const i=eventInfo(ev);
-  return `${i.away} @ ${i.home}`;
- });
-
- buildHeaders(matchups);
-
- picks.forEach(r=>{
-  const tr=document.createElement("tr");
-  tr.innerHTML=`<td class="name">${r.Name}</td>`;
-  gameIds.forEach((gid,i)=>{
-   const ev=events.get(gid);
-   const line=lineMap.get(gid);
-   const adv=r[`PickAdvancing${i+1}`];
-   const ats=r[`PickATS${i+1}`];
-   const ou=r[`Pick OU${i+1}`];
-
-   let ac="pending",sc="pending",oc="pending";
-   if(ev){
-    const info=eventInfo(ev);
-    if(info.final){
-     if(norm(adv)===norm(info.winner)) ac="correct"; else ac="wrong";
-     const aw=atsWinner(info,line.s);
-     if(aw!=="Push") sc=norm(ats)===norm(aw)?"correct":"wrong";
-     const o=ouRes(info,line.t);
-     if(o!=="Push") oc=norm(ou)===norm(o)?"correct":"wrong";
+  function splitCSVLine(line) {
+    const out = [];
+    let cur = "", inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        out.push(cur); cur = "";
+      } else cur += ch;
     }
-   }
+    out.push(cur);
+    return out.map(x => x.trim());
+  }
 
-   tr.innerHTML+=`
-    <td class="${ac}">${adv}</td>
-    <td class="${sc}">${ats}</td>
-    <td class="${oc} sep">${ou}</td>`;
+  function parseCSV(text) {
+    const lines = text.replace(/\r/g, "").split("\n").filter(l => l.trim() !== "");
+    if (lines.length < 2) return [];
+    const headers = splitCSVLine(lines[0]);
+    return lines.slice(1).map(line => {
+      const cols = splitCSVLine(line);
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = (cols[i] ?? ""));
+      return obj;
+    });
+  }
+
+  async function fetchJsonWithFallback(urls) {
+    for (const u of urls) {
+      try {
+        const r = await fetch(u, { cache: "no-store" });
+        if (!r.ok) continue;
+        return await r.json();
+      } catch (e) {}
+    }
+    throw new Error("Failed to fetch scoreboard");
+  }
+
+  async function fetchTextOrNull(path) {
+    try {
+      const r = await fetch(path, { cache: "no-store" });
+      if (!r.ok) return null;
+      return await r.text();
+    } catch (e) { return null; }
+  }
+
+  // Lines: map GameID -> {homeSpread,total} AND preserve order from file
+  function parseLinesWithOrder(linesText) {
+    const rows = parseCSV(linesText);
+    const map = new Map();
+    const order = [];
+    rows.forEach(r => {
+      const gid = String(r.GameID || "").trim();
+      const hs = Number(r.HomeSpread);
+      const tot = Number(r.Total);
+      if (!gid || Number.isNaN(hs) || Number.isNaN(tot)) return;
+      if (!map.has(gid)) order.push(gid);
+      map.set(gid, { homeSpread: hs, total: tot });
+    });
+    return { map, order };
+  }
+
+  function eventToInfo(ev) {
+    const comp = ev.competitions?.[0];
+    const teams = comp?.competitors || [];
+    const away = teams.find(t => t.homeAway === "away");
+    const home = teams.find(t => t.homeAway === "home");
+
+    const awayName = away?.team?.displayName || "Away";
+    const homeName = home?.team?.displayName || "Home";
+
+    const awayScore = Number(away?.score ?? NaN);
+    const homeScore = Number(home?.score ?? NaN);
+
+    const isFinal = comp?.status?.type?.completed === true;
+    const winnerTeam = isFinal ? (teams.find(t => t.winner === true)?.team?.displayName || "") : "";
+
+    return { awayName, homeName, awayScore, homeScore, isFinal, winnerTeam };
+  }
+
+  function matchupLabel(info) {
+    return `${info.awayName} @ ${info.homeName}`;
+  }
+
+  function computeATSWinner(info, homeSpread) {
+    const adjHome = info.homeScore + homeSpread;
+    if (adjHome > info.awayScore) return info.homeName;
+    if (adjHome < info.awayScore) return info.awayName;
+    return "Push";
+  }
+
+  function computeOUResult(info, total) {
+    const sum = info.homeScore + info.awayScore;
+    if (sum > total) return "Over";
+    if (sum < total) return "Under";
+    return "Push";
+  }
+
+  function buildHeaders(matchups, gameIds, eventsById, linesById) {
+    // Row 1: Matchups
+    let row1 = `<tr><th class="name" rowspan="5">Name</th>`;
+    matchups.forEach((m, idx) => {
+      const sepClass = (idx < matchups.length - 1) ? "sep" : "";
+      row1 += `<th colspan="3" class="${sepClass}">${m}</th>`;
+    });
+    row1 += `</tr>`;
+
+    // Row 2: Spread / O-U  (IMPORTANT: show lines even if ESPN event is missing)
+    let row2 = `<tr>`;
+    gameIds.forEach((gid, idx) => {
+      const line = gid ? linesById.get(gid) : null;
+      const ev = gid ? eventsById.get(gid) : null;
+
+      const sepClass = (idx < gameIds.length - 1) ? "sep" : "";
+
+      if (!gid || !line) {
+        row2 += `<td colspan="3" class="${sepClass}">Lines TBD</td>`;
+        return;
+      }
+
+      // If ESPN data exists, show favorite team name; otherwise still show numeric spread/total.
+      let spreadText = `HomeSpread: ${line.homeSpread}`;
+      if (ev) {
+        const info = eventToInfo(ev);
+        spreadText =
+          line.homeSpread < 0
+            ? `${info.homeName} ${line.homeSpread}`
+            : `${info.awayName} -${line.homeSpread}`;
+      }
+
+      row2 += `<td colspan="3" class="${sepClass}">Spread: ${spreadText} &nbsp; | &nbsp; O/U: ${line.total}</td>`;
+    });
+    row2 += `</tr>`;
+
+    // Row 3: Label row
+    row3 = `<tr><td class="correct-row-label" colspan="${gameIds.length * 3}">Correct Picks</td></tr>`;
+
+    // Row 4: Correct results (populate after games finish)
+    let row4 = `<tr>`;
+    for (let i = 1; i <= 6; i++) {
+      const sepClass = (i % 6 !== 0) ? "" : "";
+      // add sep on each game's 3rd cell
+      row4 += `<td class="pending">TBD</td><td class="pending">TBD</td><td class="pending sep">TBD</td>`;
+    }
+    row4 += `</tr>`;
+
+    // Row 5: Pick labels
+    let row5 = `<tr>`;
+    for (let i = 1; i <= 6; i++) {
+      row5 += `<th>Adv</th><th>Spread</th><th class="sep">O/U</th>`;
+    }
+    row5 += `</tr>`;
+
+    theadEl.innerHTML = row1 + row2 + row3 + row4 + row5;
+
+    // Add IDs to the row4 result cells now that it exists
+    // (We put placeholder TDs above; now assign IDs in order.)
+    const row4El = theadEl.querySelectorAll("tr")[3]; // 0=row1,1=row2,2=row3,3=row4
+    const tds = Array.from(row4El.querySelectorAll("td"));
+    let k = 0;
+    for (let i = 1; i <= 6; i++) {
+      tds[k++].id = `res_adv_${i}`;
+      tds[k++].id = `res_ats_${i}`;
+      tds[k++].id = `res_ou_${i}`;
+    }
+  }
+
+  function setResultsCell(id, text, cls) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.className = cls ? cls : "";
+    // keep separator on O/U cells
+    if (id.includes("_ou_")) el.classList.add("sep");
+  }
+
+  function renderResults(gameIds, eventsById, linesById) {
+    for (let i = 1; i <= 6; i++) {
+      const gid = gameIds[i-1];
+      const ev = gid ? eventsById.get(gid) : null;
+
+      if (!gid || !ev) {
+        setResultsCell(`res_adv_${i}`, "TBD", "pending");
+        setResultsCell(`res_ats_${i}`, "TBD", "pending");
+        setResultsCell(`res_ou_${i}`,  "TBD", "pending");
+        continue;
+      }
+
+      const info = eventToInfo(ev);
+
+      if (!info.isFinal) {
+        setResultsCell(`res_adv_${i}`, "TBD", "pending");
+        setResultsCell(`res_ats_${i}`, "TBD", "pending");
+        setResultsCell(`res_ou_${i}`,  "TBD", "pending");
+        continue;
+      }
+
+      setResultsCell(`res_adv_${i}`, info.winnerTeam || "Final", "");
+
+      const line = linesById.get(gid);
+      if (!line || Number.isNaN(info.homeScore) || Number.isNaN(info.awayScore)) {
+        setResultsCell(`res_ats_${i}`, "Line missing", "pending");
+        setResultsCell(`res_ou_${i}`,  "Line missing", "pending");
+        continue;
+      }
+
+      setResultsCell(`res_ats_${i}`, computeATSWinner(info, line.homeSpread), "");
+      setResultsCell(`res_ou_${i}`,  computeOUResult(info, line.total), "");
+    }
+  }
+
+  function cellClassForPick(pick, correct, isFinal) {
+    if (!isFinal) return "pending";
+    if (correct === "Push") return "push";
+    if (!pick) return "wrong";
+    return norm(pick) === norm(correct) ? "correct" : "wrong";
+  }
+
+  function renderGrid(pickRows, gameIds, eventsById, linesById) {
+    tbodyEl.innerHTML = "";
+
+    const rows = pickRows
+      .filter(r => String(r.Name || "").trim() !== ""); // keep CSV order, no sorting
+
+    rows.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td class="name">${String(r.Name||"").trim()}</td>`;
+
+      for (let i = 1; i <= 6; i++) {
+        const gid = gameIds[i-1];
+        const ev = gid ? eventsById.get(gid) : null;
+
+        const advPick = String(r[`PickAdvancing${i}`] || "").trim();
+        const atsPick = String(r[`PickATS${i}`] || "").trim();
+        const ouPick  = String(r[`Pick OU${i}`] || "").trim(); // exact header includes space
+
+        if (!gid || !ev) {
+          tr.insertAdjacentHTML("beforeend", `
+            <td class="pending">${advPick}</td>
+            <td class="pending">${atsPick}</td>
+            <td class="pending sep">${ouPick}</td>
+          `);
+          continue;
+        }
+
+        const info = eventToInfo(ev);
+        const advClass = cellClassForPick(advPick, info.winnerTeam, info.isFinal);
+
+        let atsClass = "pending", ouClass = "pending";
+        if (info.isFinal) {
+          const line = linesById.get(gid);
+          if (line && !Number.isNaN(info.homeScore) && !Number.isNaN(info.awayScore)) {
+            const atsWinner = computeATSWinner(info, line.homeSpread);
+            const ouRes = computeOUResult(info, line.total);
+            atsClass = cellClassForPick(atsPick, atsWinner, true);
+            ouClass  = cellClassForPick(ouPick,  ouRes, true);
+          }
+        }
+
+        tr.insertAdjacentHTML("beforeend", `
+          <td class="${advClass}">${advPick}</td>
+          <td class="${atsClass}">${atsPick}</td>
+          <td class="${ouClass} sep">${ouPick}</td>
+        `);
+      }
+
+      tbodyEl.appendChild(tr);
+    });
+  }
+
+  function extractGameIdsWide(pickRows) {
+    const first = pickRows.find(r => String(r.GameID1 || "").trim() !== "");
+    if (!first) return ["","","","","",""];
+    const ids = [];
+    for (let i = 1; i <= 6; i++) ids.push(String(first[`GameID${i}`] || "").trim());
+    return ids;
+  }
+
+  async function main() {
+    msgEl.textContent = "Loading…";
+
+    const picksText = await fetchTextOrNull("wildcard_picks.csv");
+    const linesText = await fetchTextOrNull("lines.csv");
+
+    const { map: linesById, order: lineOrder } = linesText ? parseLinesWithOrder(linesText) : { map: new Map(), order: [] };
+
+    // Always load scoreboard so matchups can show
+    const data = await fetchJsonWithFallback(SCOREBOARD_URLS);
+
+    const eventsById = new Map();
+    (data.events || []).forEach(ev => {
+      if (ev?.id) eventsById.set(String(ev.id), ev);
+      const compId = ev?.competitions?.[0]?.id;
+      if (compId) eventsById.set(String(compId), ev);
+    });
+
+    // Choose GameIDs:
+    // 1) from picks file if present, else 2) from lines.csv order, else blanks
+    let pickRows = [];
+    let gameIds = ["","","","","",""];
+
+    if (picksText) {
+      pickRows = parseCSV(picksText);
+      gameIds = extractGameIdsWide(pickRows);
+    } else if (lineOrder.length) {
+      gameIds = lineOrder.slice(0, 6);
+    }
+
+    const matchups = gameIds.map((gid, idx) => {
+      const ev = gid ? eventsById.get(gid) : null;
+      if (!ev) return `Game ${idx + 1}`;
+      return matchupLabel(eventToInfo(ev));
+    });
+
+    buildHeaders(matchups, gameIds, eventsById, linesById);
+
+    // show lines even if picks missing
+    if (!linesText) {
+      msgEl.textContent = "Missing lines.csv (spreads/totals).";
+    }
+
+    if (!picksText) {
+      msgEl.textContent = (msgEl.textContent ? msgEl.textContent + " " : "") +
+        "No picks yet (missing wildcard_picks.csv).";
+      return;
+    }
+
+    renderResults(gameIds, eventsById, linesById);
+    renderGrid(pickRows, gameIds, eventsById, linesById);
+
+    msgEl.textContent =
+      (!linesText ? "Loaded picks. Missing lines.csv." : "Loaded wildcard_picks.csv and lines.csv.");
+  }
+
+  main().catch(err => {
+    console.error(err);
+    msgEl.textContent = "Could not load data right now.";
+    theadEl.innerHTML = `<tr><th class="name">Name</th></tr>`;
+    tbodyEl.innerHTML = ``;
   });
-  tbody.appendChild(tr);
- });
-
- msg.textContent="Loaded Wild Card Picks";
-})();
 </script>
 </body>
 </html>
