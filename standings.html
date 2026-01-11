@@ -4,631 +4,647 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Standings</title>
-<style>
-  :root{
-    --bg:#0b1020;
-    --card:#111a33;
-    --card2:#0f1730;
-    --text:#e8ecff;
-    --muted:#a9b3da;
-    --accent:#5eead4;
-    --border: rgba(255,255,255,.12);
-    --grid: rgba(255,255,255,.18);
-    --sep: rgba(255,255,255,.28);
-    --shadow: 0 12px 30px rgba(0,0,0,.35);
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0;
-    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
-    background: radial-gradient(1200px 500px at 20% -10%, rgba(94,234,212,.18), transparent 60%),
-                radial-gradient(900px 500px at 100% 0%, rgba(99,102,241,.22), transparent 55%),
-                var(--bg);
-    color:var(--text);
-    min-height:100vh;
-  }
 
-  .wrap{max-width:1200px;margin:0 auto;padding:28px 16px 44px}
-  .top{
-    display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
-    padding:18px 18px 10px;border:1px solid var(--border);border-radius:18px;background:rgba(17,26,51,.55);
-    box-shadow: var(--shadow); backdrop-filter: blur(10px);
-  }
-  h1{margin:0;font-size:28px;letter-spacing:.2px}
-  .sub{margin:6px 0 0;color:var(--muted);max-width:860px;line-height:1.45}
-  .pill{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:8px 10px;border:1px solid var(--border);border-radius:999px;
-    color:var(--muted);font-size:12px;background:rgba(15,23,48,.55)
-  }
-  .nav{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;}
-  .btn{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:10px 12px;border-radius:12px;border:1px solid var(--border);
-    background: rgba(15,23,48,.65);color:var(--text);text-decoration:none;
-    transition: transform .12s ease, border-color .12s ease;
-  }
-  .btn:hover{transform: translateY(-1px);border-color: rgba(94,234,212,.45)}
-  .card{
-    margin-top:18px;border:1px solid var(--border);border-radius:18px;
-    background: linear-gradient(180deg, rgba(17,26,51,.75), rgba(15,23,48,.65));
-    box-shadow: var(--shadow);padding:14px;overflow-x:auto;
-  }
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#111a33;
+      --card2:#0f1730;
+      --text:#e8ecff;
+      --muted:#a9b3da;
+      --accent:#5eead4;
+      --border: rgba(255,255,255,.12);
+      --grid: rgba(255,255,255,.18);
+      --sep: rgba(255,255,255,.28);
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 500px at 20% -10%, rgba(94,234,212,.18), transparent 60%),
+                  radial-gradient(900px 500px at 100% 0%, rgba(99,102,241,.22), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+    }
 
-  /* ===== Table ===== */
-  #tbl{
-    border-collapse: collapse;
-    width: 100%;
-    min-width: 1200px;
-    table-layout: fixed;              /* makes widths predictable */
-  }
-  #tbl th, #tbl td{
-    border: 1px solid var(--grid);
-    padding: 7px 8px;
-    text-align: center;
-    vertical-align: middle;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 13px;
-  }
-  #tbl thead th{
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: rgba(15,23,48,.95);
-  }
-  #tbl th.name, #tbl td.name{
-    text-align:left;
-    font-weight:700;
-  }
+    .wrap{max-width:1200px;margin:0 auto;padding:28px 16px 44px}
+    .top{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
+      padding:18px 18px 10px;border:1px solid var(--border);border-radius:18px;background:rgba(17,26,51,.55);
+      box-shadow: var(--shadow); backdrop-filter: blur(10px);
+    }
+    h1{margin:0;font-size:28px;letter-spacing:.2px}
+    .sub{margin:6px 0 0;color:var(--muted);max-width:860px;line-height:1.45}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border:1px solid var(--border);border-radius:999px;
+      color:var(--muted);font-size:12px;background:rgba(15,23,48,.55)
+    }
+    .nav{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;}
+    .btn{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:10px 12px;border-radius:12px;border:1px solid var(--border);
+      background: rgba(15,23,48,.65);color:var(--text);text-decoration:none;
+      transition: transform .12s ease, border-color .12s ease;
+      cursor:pointer;
+    }
+    .btn:hover{transform: translateY(-1px);border-color: rgba(94,234,212,.45)}
+    .card{
+      margin-top:18px;border:1px solid var(--border);border-radius:18px;
+      background: linear-gradient(180deg, rgba(17,26,51,.75), rgba(15,23,48,.65));
+      box-shadow: var(--shadow);padding:14px;overflow-x:auto;
+    }
 
-  /* ===== Even-ish column widths ===== */
-  /* Rank */
-  #tbl thead th:nth-child(1),
-  #tbl tbody td:nth-child(1){ width: 44px; }
+    /* ===== Table ===== */
+    #tbl{
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 1200px;
+      table-layout: fixed;
+    }
+    #tbl th, #tbl td{
+      border: 1px solid var(--grid);
+      padding: 7px 8px;
+      text-align: center;
+      vertical-align: middle;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 13px;
+    }
+    #tbl thead th{
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: rgba(15,23,48,.95);
+    }
+    #tbl th.name, #tbl td.name{
+      text-align:left;
+      font-weight:700;
+    }
 
-  /* Entrant */
-  #tbl thead th:nth-child(2),
-  #tbl tbody td:nth-child(2){ width: 170px; }
+    /* ===== Even-ish column widths ===== */
+    #tbl thead th:nth-child(1),
+    #tbl tbody td:nth-child(1){ width: 44px; }
 
-  /* Pick columns: Adv + Spread (wider), O/U (smaller)
-     This pattern applies cleanly starting at col 3 */
-  #tbl thead th:nth-child(3),
-  #tbl tbody td:nth-child(3),
-  #tbl thead th:nth-child(4),
-  #tbl tbody td:nth-child(4),
-  #tbl thead th:nth-child(7),
-  #tbl tbody td:nth-child(7),
-  #tbl thead th:nth-child(8),
-  #tbl tbody td:nth-child(8),
-  #tbl thead th:nth-child(11),
-  #tbl tbody td:nth-child(11),
-  #tbl thead th:nth-child(12),
-  #tbl tbody td:nth-child(12),
-  #tbl thead th:nth-child(15),
-  #tbl tbody td:nth-child(15),
-  #tbl thead th:nth-child(16),
-  #tbl tbody td:nth-child(16){
-    width: 74px;                      /* Adv + Spread */
-  }
+    #tbl thead th:nth-child(2),
+    #tbl tbody td:nth-child(2){ width: 170px; }
 
-  #tbl thead th:nth-child(5),
-  #tbl tbody td:nth-child(5),
-  #tbl thead th:nth-child(9),
-  #tbl tbody td:nth-child(9),
-  #tbl thead th:nth-child(13),
-  #tbl tbody td:nth-child(13),
-  #tbl thead th:nth-child(17),
-  #tbl tbody td:nth-child(17){
-    width: 52px;                      /* O/U */
-  }
+    /* Adv + Spread (wider) */
+    #tbl thead th:nth-child(3),  #tbl tbody td:nth-child(3),
+    #tbl thead th:nth-child(4),  #tbl tbody td:nth-child(4),
+    #tbl thead th:nth-child(7),  #tbl tbody td:nth-child(7),
+    #tbl thead th:nth-child(8),  #tbl tbody td:nth-child(8),
+    #tbl thead th:nth-child(11), #tbl tbody td:nth-child(11),
+    #tbl thead th:nth-child(12), #tbl tbody td:nth-child(12),
+    #tbl thead th:nth-child(15), #tbl tbody td:nth-child(15),
+    #tbl thead th:nth-child(16), #tbl tbody td:nth-child(16){
+      width: 74px;
+    }
 
-  /* Subtotals */
-  #tbl thead th:nth-child(6),
-  #tbl tbody td:nth-child(6),
-  #tbl thead th:nth-child(10),
-  #tbl tbody td:nth-child(10),
-  #tbl thead th:nth-child(14),
-  #tbl tbody td:nth-child(14),
-  #tbl thead th:nth-child(21),
-  #tbl tbody td:nth-child(21){
-    width: 68px;
-  }
+    /* O/U (smaller) */
+    #tbl thead th:nth-child(5),  #tbl tbody td:nth-child(5),
+    #tbl thead th:nth-child(9),  #tbl tbody td:nth-child(9),
+    #tbl thead th:nth-child(13), #tbl tbody td:nth-child(13),
+    #tbl thead th:nth-child(17), #tbl tbody td:nth-child(17){
+      width: 52px;
+    }
 
-  /* SB prediction cols */
-  #tbl thead th:nth-child(18),
-  #tbl tbody td:nth-child(18),
-  #tbl thead th:nth-child(19),
-  #tbl tbody td:nth-child(19),
-  #tbl thead th:nth-child(20),
-  #tbl tbody td:nth-child(20){
-    width: 76px;
-  }
+    /* Round subtotals */
+    #tbl thead th:nth-child(6),  #tbl tbody td:nth-child(6),
+    #tbl thead th:nth-child(10), #tbl tbody td:nth-child(10),
+    #tbl thead th:nth-child(14), #tbl tbody td:nth-child(14),
+    #tbl thead th:nth-child(21), #tbl tbody td:nth-child(21){
+      width: 68px;
+    }
 
-  /* Total + Tie-breaker */
-  #tbl thead th:nth-child(22),
-  #tbl tbody td:nth-child(22){ width: 80px; }
+    /* SB prediction cols */
+    #tbl thead th:nth-child(18), #tbl tbody td:nth-child(18),
+    #tbl thead th:nth-child(19), #tbl tbody td:nth-child(19),
+    #tbl thead th:nth-child(20), #tbl tbody td:nth-child(20){
+      width: 76px;
+    }
 
-  #tbl thead th:nth-child(23),
-  #tbl tbody td:nth-child(23){
-    width: 58px;
-    font-size: 12px;
-    color: rgba(232,236,255,.86);
-  }
+    /* Total + Tie-breaker */
+    #tbl thead th:nth-child(22),
+    #tbl tbody td:nth-child(22){ width: 80px; }
 
-  /* ===== Visual separators between round blocks ===== */
-  #tbl thead th:nth-child(6),  #tbl tbody td:nth-child(6),
-  #tbl thead th:nth-child(10), #tbl tbody td:nth-child(10),
-  #tbl thead th:nth-child(14), #tbl tbody td:nth-child(14),
-  #tbl thead th:nth-child(21), #tbl tbody td:nth-child(21){
-    border-right: 2px solid var(--sep);
-  }
+    #tbl thead th:nth-child(23),
+    #tbl tbody td:nth-child(23){
+      width: 58px;
+      font-size: 12px;
+      color: rgba(232,236,255,.86);
+    }
 
-  /* ===== Emphasis: subtotals + TOTAL column ===== */
-  /* Subtotals tint */
-  #tbl tbody td:nth-child(6),
-  #tbl tbody td:nth-child(10),
-  #tbl tbody td:nth-child(14),
-  #tbl tbody td:nth-child(21){
-    background: rgba(94,234,212,.10);
-    font-weight: 800;
-  }
+    /* ===== Visual separators between round blocks ===== */
+    #tbl thead th:nth-child(6),  #tbl tbody td:nth-child(6),
+    #tbl thead th:nth-child(10), #tbl tbody td:nth-child(10),
+    #tbl thead th:nth-child(14), #tbl tbody td:nth-child(14),
+    #tbl thead th:nth-child(21), #tbl tbody td:nth-child(21){
+      border-right: 2px solid var(--sep);
+    }
 
-  /* TOTAL column: strongest emphasis + bold border around the whole column */
-  #tbl thead th:nth-child(22),
-  #tbl tbody td:nth-child(22){
-    background: rgba(99,102,241,.16);
-    font-weight: 900;
-    border-left: 3px solid rgba(255,255,255,.35);
-    border-right: 3px solid rgba(255,255,255,.35);
-  }
-  /* Add a top/bottom cap so it looks like a boxed column */
-  #tbl thead th:nth-child(22){ border-top: 3px solid rgba(255,255,255,.35); }
-  #tbl tbody tr:last-child td:nth-child(22){ border-bottom: 3px solid rgba(255,255,255,.35); }
+    /* ===== Emphasis: subtotals + TOTAL column ===== */
+    #tbl tbody td:nth-child(6),
+    #tbl tbody td:nth-child(10),
+    #tbl tbody td:nth-child(14),
+    #tbl tbody td:nth-child(21){
+      background: rgba(94,234,212,.10);
+      font-weight: 800;
+    }
 
-  /* Collapse helper */
-  .hidden-col{display:none !important;}
+    #tbl thead th:nth-child(22),
+    #tbl tbody td:nth-child(22){
+      background: rgba(99,102,241,.16);
+      font-weight: 900;
+      border-left: 3px solid rgba(255,255,255,.35);
+      border-right: 3px solid rgba(255,255,255,.35);
+    }
+    #tbl thead th:nth-child(22){ border-top: 3px solid rgba(255,255,255,.35); }
+    #tbl tbody tr:last-child td:nth-child(22){ border-bottom: 3px solid rgba(255,255,255,.35); }
 
-  #msg{ color:var(--muted); font-size:12px; margin-top:10px; }
-</style>
+    .hidden-col{display:none !important;}
+    #msg{ color:var(--muted); font-size:12px; margin-top:10px; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Standings</h1>
+        <p class="sub">Scores update automatically when games go final (manual refresh).</p>
+        <div class="nav">
+          <a class="btn" href="index.html">Home</a>
+          <a class="btn" href="wildcard.html">Wild Card Picks</a>
+          <a class="btn" href="superbowl.html">Super Bowl Predictions</a>
+          <a class="btn" href="games.html">NFL Scores</a>
+          <a class="btn" href="rules.html">Rules</a>
+          <a class="btn" href="halloffame.html">Hall of Fame</a>
+        </div>
+      </div>
+      <div class="pill">Manual refresh</div>
+    </div>
+
+    <div id="msg"></div>
+
+    <div class="card">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th rowspan="2">Rank</th>
+            <th rowspan="2" class="name">Entrant</th>
+
+            <th colspan="4">Wild Card</th>
+            <th colspan="4">Divisional</th>
+            <th colspan="4">Conference Championships</th>
+            <th colspan="7">Super Bowl</th>
+
+            <th rowspan="2">Total</th>
+            <th rowspan="2">Tie-breaker</th>
+          </tr>
+
+          <tr>
+            <th>Adv</th><th>Spread</th><th>O/U</th><th>Total WC</th>
+            <th>Adv</th><th>Spread</th><th>O/U</th><th>Total DIV</th>
+            <th>Adv</th><th>Spread</th><th>O/U</th><th>Total CONF</th>
+
+            <th>Adv</th><th>Spread</th><th>O/U</th>
+            <th>AFC</th><th>NFC</th><th>SB Champ</th><th>Total SB</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <script>
-(() => {
-  "use strict";
+  (() => {
+    "use strict";
 
-  // ===== ESPN SCOREBOARD (for finals + champ winners) =====
-  const SCOREBOARD_URLS = [
-    "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(
-      "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
-    ),
-    "https://corsproxy.io/?" + encodeURIComponent(
-      "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
-    )
-  ];
+    // ===== ESPN SCOREBOARD (for finals + champ winners) =====
+    const SCOREBOARD_URLS = [
+      "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(
+        "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
+      ),
+      "https://corsproxy.io/?" + encodeURIComponent(
+        "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
+      )
+    ];
 
-  // ===== SCORING WEIGHTS =====
-  const SC = {
-    WC:   { adv: 3,    ats: 2,   ou: 1   },
-    DIV:  { adv: 4.5,  ats: 3,   ou: 1.5 },
-    CONF: { adv: 9,    ats: 6,   ou: 3   },
-    SB:   { adv: 13.5, ats: 9,   ou: 4.5 },
-    PRED: { afc: 4.5, nfc: 4.5, both: 1.5, champ: 7.5 }
-  };
+    // ===== SCORING WEIGHTS =====
+    const SC = {
+      WC:   { adv: 3,    ats: 2,   ou: 1   },
+      DIV:  { adv: 4.5,  ats: 3,   ou: 1.5 },
+      CONF: { adv: 9,    ats: 6,   ou: 3   },
+      SB:   { adv: 13.5, ats: 9,   ou: 4.5 },
+      PRED: { afc: 4.5, nfc: 4.5, both: 1.5, champ: 7.5 }
+    };
 
-  const msgEl = document.getElementById("msg");
-  const tbodyEl = document.getElementById("tbody");
-  const tableEl = document.getElementById("tbl");
+    const msgEl = document.getElementById("msg");
+    const tbodyEl = document.getElementById("tbody");
+    const tableEl = document.getElementById("tbl");
 
-  function norm(s) { return String(s || "").trim().toLowerCase(); }
+    function norm(s) { return String(s || "").trim().toLowerCase(); }
 
-  function splitCSVLine(line) {
-    const out = [];
-    let cur = "", inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
-        else inQ = !inQ;
-      } else if (ch === ',' && !inQ) {
-        out.push(cur); cur = "";
-      } else cur += ch;
+    function splitCSVLine(line) {
+      const out = [];
+      let cur = "", inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+          else inQ = !inQ;
+        } else if (ch === ',' && !inQ) {
+          out.push(cur); cur = "";
+        } else cur += ch;
+      }
+      out.push(cur);
+      return out.map(x => x.trim());
     }
-    out.push(cur);
-    return out.map(x => x.trim());
-  }
 
-  function parseCSV(text) {
-    const lines = text.replace(/\r/g, "").split("\n").filter(l => l.trim() !== "");
-    if (lines.length < 2) return [];
-    const headers = splitCSVLine(lines[0]);
-    return lines.slice(1).map(line => {
-      const cols = splitCSVLine(line);
-      const obj = {};
-      headers.forEach((h, i) => obj[h] = (cols[i] ?? ""));
-      return obj;
-    });
-  }
+    function parseCSV(text) {
+      const lines = text.replace(/\r/g, "").split("\n").filter(l => l.trim() !== "");
+      if (lines.length < 2) return [];
+      const headers = splitCSVLine(lines[0]);
+      return lines.slice(1).map(line => {
+        const cols = splitCSVLine(line);
+        const obj = {};
+        headers.forEach((h, i) => obj[h] = (cols[i] ?? ""));
+        return obj;
+      });
+    }
 
-  async function fetchJsonWithFallback(urls) {
-    for (const u of urls) {
+    async function fetchJsonWithFallback(urls) {
+      for (const u of urls) {
+        try {
+          const r = await fetch(u, { cache: "no-store" });
+          if (!r.ok) continue;
+          return await r.json();
+        } catch (e) {}
+      }
+      throw new Error("Failed to fetch scoreboard");
+    }
+
+    async function fetchTextOrNull(path) {
       try {
-        const r = await fetch(u, { cache: "no-store" });
-        if (!r.ok) continue;
-        return await r.json();
-      } catch (e) {}
+        const r = await fetch(path, { cache: "no-store" });
+        if (!r.ok) return null;
+        return await r.text();
+      } catch (e) { return null; }
     }
-    throw new Error("Failed to fetch scoreboard");
-  }
 
-  async function fetchTextOrNull(path) {
-    try {
-      const r = await fetch(path, { cache: "no-store" });
-      if (!r.ok) return null;
-      return await r.text();
-    } catch (e) { return null; }
-  }
+    function parseLines(linesText) {
+      const rows = parseCSV(linesText);
+      const map = new Map();
+      rows.forEach(r => {
+        const gid = String(r.GameID || r.GAMEID || r.gameid || "").trim();
+        const hs = Number(r.HomeSpread ?? r.homespread);
+        const tot = Number(r.Total ?? r.total);
+        if (!gid || Number.isNaN(hs) || Number.isNaN(tot)) return;
+        map.set(gid, { homeSpread: hs, total: tot });
+      });
+      return map;
+    }
 
-  function parseLines(linesText) {
-    const rows = parseCSV(linesText);
-    const map = new Map();
-    rows.forEach(r => {
-      const gid = String(r.GameID || r.GAMEID || r.gameid || "").trim();
-      const hs = Number(r.HomeSpread ?? r.homespread);
-      const tot = Number(r.Total ?? r.total);
-      if (!gid || Number.isNaN(hs) || Number.isNaN(tot)) return;
-      map.set(gid, { homeSpread: hs, total: tot });
-    });
-    return map;
-  }
+    function eventInfo(ev) {
+      const comp = ev.competitions?.[0];
+      const teams = comp?.competitors || [];
+      const away = teams.find(t => t.homeAway === "away");
+      const home = teams.find(t => t.homeAway === "home");
 
-  function eventInfo(ev) {
-    const comp = ev.competitions?.[0];
-    const teams = comp?.competitors || [];
-    const away = teams.find(t => t.homeAway === "away");
-    const home = teams.find(t => t.homeAway === "home");
+      const awayName = away?.team?.displayName || "Away";
+      const homeName = home?.team?.displayName || "Home";
+      const awayScore = Number(away?.score ?? NaN);
+      const homeScore = Number(home?.score ?? NaN);
 
-    const awayName = away?.team?.displayName || "Away";
-    const homeName = home?.team?.displayName || "Home";
-    const awayScore = Number(away?.score ?? NaN);
-    const homeScore = Number(home?.score ?? NaN);
+      const isFinal = comp?.status?.type?.completed === true;
+      const winnerTeam = isFinal ? (teams.find(t => t.winner === true)?.team?.displayName || "") : "";
+      return { awayName, homeName, awayScore, homeScore, isFinal, winnerTeam, name: (ev.name || ev.shortName || "") };
+    }
 
-    const isFinal = comp?.status?.type?.completed === true;
-    const winnerTeam = isFinal ? (teams.find(t => t.winner === true)?.team?.displayName || "") : "";
-    return { awayName, homeName, awayScore, homeScore, isFinal, winnerTeam, name: (ev.name || ev.shortName || "") };
-  }
+    function computeATSWinnerAndHomeMargin(info, homeSpread) {
+      const homeMargin = (info.homeScore + homeSpread) - info.awayScore;
+      let winner = "Push";
+      if (homeMargin > 0) winner = info.homeName;
+      else if (homeMargin < 0) winner = info.awayName;
+      return { atsWinner: winner, homeMargin };
+    }
 
-  function computeATSWinnerAndHomeMargin(info, homeSpread) {
-    const homeMargin = (info.homeScore + homeSpread) - info.awayScore;
-    let winner = "Push";
-    if (homeMargin > 0) winner = info.homeName;
-    else if (homeMargin < 0) winner = info.awayName;
-    return { atsWinner: winner, homeMargin };
-  }
+    function computeOU(info, total) {
+      const sum = info.homeScore + info.awayScore;
+      if (sum > total) return "Over";
+      if (sum < total) return "Under";
+      return "Push";
+    }
 
-  function computeOU(info, total) {
-    const sum = info.homeScore + info.awayScore;
-    if (sum > total) return "Over";
-    if (sum < total) return "Under";
-    return "Push";
-  }
+    function pickSide(pick, homeName, awayName) {
+      const p = norm(pick);
+      if (!p) return "";
+      if (p === norm(homeName)) return "home";
+      if (p === norm(awayName)) return "away";
+      return "";
+    }
 
-  function pickSide(pick, homeName, awayName) {
-    const p = norm(pick);
-    if (!p) return "";
-    if (p === norm(homeName)) return "home";
-    if (p === norm(awayName)) return "away";
-    return "";
-  }
+    function extractGameIdsWide(row, nGames) {
+      const ids = [];
+      for (let i = 1; i <= nGames; i++) ids.push(String(row[`GameID${i}`] || "").trim());
+      return ids;
+    }
 
-  function extractGameIdsWide(row, nGames) {
-    const ids = [];
-    for (let i = 1; i <= nGames; i++) ids.push(String(row[`GameID${i}`] || "").trim());
-    return ids;
-  }
+    function ensureEntrant(standings, name) {
+      if (standings.has(name)) return;
+      standings.set(name, {
+        name,
+        wc_adv:0,wc_ats:0,wc_ou:0,wc_total:0,
+        div_adv:0,div_ats:0,div_ou:0,div_total:0,
+        conf_adv:0,conf_ats:0,conf_ou:0,conf_total:0,
+        sb_adv:0,sb_ats:0,sb_ou:0,
+        sb_afc:0,sb_nfc:0,sb_champ:0,sb_total:0,
+        total:0,
+        tiebreaker:0
+      });
+    }
 
-  function ensureEntrant(standings, name) {
-    if (standings.has(name)) return;
-    standings.set(name, {
-      name,
-      wc_adv:0,wc_ats:0,wc_ou:0,wc_total:0,
-      div_adv:0,div_ats:0,div_ou:0,div_total:0,
-      conf_adv:0,conf_ats:0,conf_ou:0,conf_total:0,
-      sb_adv:0,sb_ats:0,sb_ou:0,
-      sb_afc:0,sb_nfc:0,sb_champ:0,sb_total:0,
-      total:0,
-      tiebreaker:0
-    });
-  }
+    function scoreRound(picksRows, nGames, prefix, weights, eventsById, linesById, standings) {
+      picksRows.forEach(r => {
+        const name = String(r.Name || "").trim();
+        if (!name) return;
 
-  function scoreRound(picksRows, nGames, prefix, weights, eventsById, linesById, standings) {
-    picksRows.forEach(r => {
-      const name = String(r.Name || "").trim();
-      if (!name) return;
+        ensureEntrant(standings, name);
+        const s = standings.get(name);
+        const gameIds = extractGameIdsWide(r, nGames);
 
-      ensureEntrant(standings, name);
-      const s = standings.get(name);
-      const gameIds = extractGameIdsWide(r, nGames);
+        for (let i = 1; i <= nGames; i++) {
+          const gid = gameIds[i-1];
+          if (!gid) continue;
 
-      for (let i = 1; i <= nGames; i++) {
-        const gid = gameIds[i-1];
-        if (!gid) continue;
+          const ev = eventsById.get(gid);
+          const line = linesById.get(gid);
+          if (!ev || !line) continue;
 
-        const ev = eventsById.get(gid);
-        const line = linesById.get(gid);
-        if (!ev || !line) continue;
+          const info = eventInfo(ev);
+          if (!info.isFinal) continue;
 
+          const advPick = String(r[`PickAdvancing${i}`] || "").trim();
+          const atsPick = String(r[`PickATS${i}`] || "").trim();
+          const ouPick  = String(r[`Pick OU${i}`] || "").trim();
+
+          if (norm(advPick) && norm(advPick) === norm(info.winnerTeam)) s[`${prefix}_adv`] += weights.adv;
+
+          if (!Number.isNaN(info.homeScore) && !Number.isNaN(info.awayScore)) {
+            const { atsWinner, homeMargin } = computeATSWinnerAndHomeMargin(info, line.homeSpread);
+
+            if (atsWinner !== "Push") {
+              const side = pickSide(atsPick, info.homeName, info.awayName);
+              const correctSide = (norm(atsWinner) === norm(info.homeName)) ? "home" : "away";
+
+              if (side && side === correctSide) {
+                s[`${prefix}_ats`] += weights.ats;
+              } else {
+                let miss = 0;
+                if (side === "home") miss = Math.max(0, -homeMargin);
+                else if (side === "away") miss = Math.max(0, homeMargin);
+                else miss = Math.abs(homeMargin);
+                s.tiebreaker += miss;
+              }
+            }
+
+            const ouRes = computeOU(info, line.total);
+            if (ouRes !== "Push" && norm(ouPick) && norm(ouPick) === norm(ouRes)) s[`${prefix}_ou`] += weights.ou;
+          }
+        }
+
+        if (prefix === "wc")   s.wc_total   = s.wc_adv + s.wc_ats + s.wc_ou;
+        if (prefix === "div")  s.div_total  = s.div_adv + s.div_ats + s.div_ou;
+        if (prefix === "conf") s.conf_total = s.conf_adv + s.conf_ats + s.conf_ou;
+      });
+    }
+
+    function getChampWinners(eventsById) {
+      let afcWinner = "", nfcWinner = "", sbWinner = "";
+      for (const ev of eventsById.values()) {
         const info = eventInfo(ev);
         if (!info.isFinal) continue;
+        const title = norm(info.name);
+        if (!afcWinner && title.includes("afc") && title.includes("championship")) afcWinner = info.winnerTeam;
+        if (!nfcWinner && title.includes("nfc") && title.includes("championship")) nfcWinner = info.winnerTeam;
+        if (!sbWinner  && title.includes("super bowl")) sbWinner = info.winnerTeam;
+      }
+      return { afcWinner, nfcWinner, sbWinner };
+    }
 
-        const advPick = String(r[`PickAdvancing${i}`] || "").trim();
-        const atsPick = String(r[`PickATS${i}`] || "").trim();
-        const ouPick  = String(r[`Pick OU${i}`] || "").trim();
+    function scorePredictions(predRows, champs, standings) {
+      predRows.forEach(r => {
+        const name = String(r.Name || "").trim();
+        if (!name) return;
 
-        if (norm(advPick) && norm(advPick) === norm(info.winnerTeam)) s[`${prefix}_adv`] += weights.adv;
+        ensureEntrant(standings, name);
+        const s = standings.get(name);
 
-        if (!Number.isNaN(info.homeScore) && !Number.isNaN(info.awayScore)) {
-          const { atsWinner, homeMargin } = computeATSWinnerAndHomeMargin(info, line.homeSpread);
+        const pickAFC = String(r.AFCChampion || r["AFC Champion"] || "").trim();
+        const pickNFC = String(r.NFCChampion || r["NFC Champion"] || "").trim();
+        const pickSB  = String(r.SuperBowlChampion || r["Super Bowl Champion"] || r.SBChampion || "").trim();
 
-          if (atsWinner !== "Push") {
-            const side = pickSide(atsPick, info.homeName, info.awayName);
-            const correctSide = (norm(atsWinner) === norm(info.homeName)) ? "home" : "away";
+        const afcCorrect = champs.afcWinner && norm(pickAFC) === norm(champs.afcWinner);
+        const nfcCorrect = champs.nfcWinner && norm(pickNFC) === norm(champs.nfcWinner);
+        const sbCorrect  = champs.sbWinner  && norm(pickSB)  === norm(champs.sbWinner);
 
-            if (side && side === correctSide) {
-              s[`${prefix}_ats`] += weights.ats;
-            } else {
-              let miss = 0;
-              if (side === "home") miss = Math.max(0, -homeMargin);
-              else if (side === "away") miss = Math.max(0, homeMargin);
-              else miss = Math.abs(homeMargin);
-              s.tiebreaker += miss;
-            }
+        s.sb_afc = afcCorrect ? SC.PRED.afc : 0;
+        s.sb_nfc = nfcCorrect ? SC.PRED.nfc : 0;
+        s._sb_both_bonus = (champs.afcWinner && champs.nfcWinner && afcCorrect && nfcCorrect) ? SC.PRED.both : 0;
+        s.sb_champ = sbCorrect ? SC.PRED.champ : 0;
+      });
+    }
+
+    function finalizeTotals(standings) {
+      standings.forEach(s => {
+        const sbPredTotal = (s.sb_afc||0) + (s.sb_nfc||0) + (s._sb_both_bonus||0) + (s.sb_champ||0);
+        const sbGameTotal = (s.sb_adv||0) + (s.sb_ats||0) + (s.sb_ou||0);
+        s.sb_total = sbGameTotal + sbPredTotal;
+        s.total = (s.wc_total||0) + (s.div_total||0) + (s.conf_total||0) + (s.sb_total||0);
+        delete s._sb_both_bonus;
+      });
+    }
+
+    function renderTable(rows) {
+      // Sort by Total desc, Tie-breaker asc (NO alphabetical)
+      rows.sort((a,b) => (b.total - a.total) || (a.tiebreaker - b.tiebreaker));
+
+      tbodyEl.innerHTML = "";
+
+      let lastKey = null;
+      let lastRank = 0;
+
+      rows.forEach((r, idx) => {
+        const key = `${Number(r.total).toFixed(2)}|${Number(r.tiebreaker).toFixed(2)}`;
+        const rank = (key === lastKey) ? lastRank : (idx + 1);
+        lastKey = key;
+        lastRank = rank;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${rank}</td>
+          <td class="name">${r.name}</td>
+
+          <td>${r.wc_adv}</td><td>${r.wc_ats}</td><td>${r.wc_ou}</td><td><b>${r.wc_total}</b></td>
+          <td>${r.div_adv}</td><td>${r.div_ats}</td><td>${r.div_ou}</td><td><b>${r.div_total}</b></td>
+          <td>${r.conf_adv}</td><td>${r.conf_ats}</td><td>${r.conf_ou}</td><td><b>${r.conf_total}</b></td>
+
+          <td>${r.sb_adv}</td><td>${r.sb_ats}</td><td>${r.sb_ou}</td>
+          <td>${r.sb_afc}</td><td>${r.sb_nfc}</td><td>${r.sb_champ}</td><td><b>${r.sb_total}</b></td>
+
+          <td><b>${r.total}</b></td>
+          <td>${Number(r.tiebreaker).toFixed(1).replace(/\.0$/, "")}</td>
+        `;
+        tbodyEl.appendChild(tr);
+      });
+    }
+
+    // ===== Collapse future rounds (Divisional + Conference + Super Bowl) =====
+    function setupFutureCollapse() {
+      if (!tableEl || !tableEl.tHead) return;
+
+      // create the toggle once
+      let btn = document.getElementById("toggleFuture");
+      if (!btn) {
+        btn = document.createElement("button");
+        btn.className = "btn";
+        btn.id = "toggleFuture";
+        btn.type = "button";
+        btn.textContent = "Show future rounds";
+        const card = tableEl.closest(".card") || tableEl.parentElement;
+        if (card) card.insertBefore(btn, tableEl);
+        else tableEl.parentElement.insertBefore(btn, tableEl);
+      }
+
+      const futureGroupMatchers = [/divisional/i, /conference/i, /super bowl/i];
+
+      function getFutureColumnIndices() {
+        const rows = Array.from(tableEl.tHead.rows || []);
+        let targetRow = null;
+
+        for (const r of rows) {
+          const cells = Array.from(r.cells || []);
+          if (cells.some(c => futureGroupMatchers.some(rx => rx.test((c.textContent || "").trim())))) {
+            targetRow = r; // this should be your group header row
+            break;
           }
-
-          const ouRes = computeOU(info, line.total);
-          if (ouRes !== "Push" && norm(ouPick) && norm(ouPick) === norm(ouRes)) s[`${prefix}_ou`] += weights.ou;
         }
-      }
+        if (!targetRow) return new Set();
 
-      if (prefix === "wc")   s.wc_total   = s.wc_adv + s.wc_ats + s.wc_ou;
-      if (prefix === "div")  s.div_total  = s.div_adv + s.div_ats + s.div_ou;
-      if (prefix === "conf") s.conf_total = s.conf_adv + s.conf_ats + s.conf_ou;
-    });
-  }
+        const hidden = new Set();
+        let col = 0;
 
-  function getChampWinners(eventsById) {
-    let afcWinner = "", nfcWinner = "", sbWinner = "";
-    for (const ev of eventsById.values()) {
-      const info = eventInfo(ev);
-      if (!info.isFinal) continue;
-      const title = norm(info.name);
-      if (!afcWinner && title.includes("afc") && title.includes("championship")) afcWinner = info.winnerTeam;
-      if (!nfcWinner && title.includes("nfc") && title.includes("championship")) nfcWinner = info.winnerTeam;
-      if (!sbWinner  && title.includes("super bowl")) sbWinner = info.winnerTeam;
-    }
-    return { afcWinner, nfcWinner, sbWinner };
-  }
-
-  function scorePredictions(predRows, champs, standings) {
-    predRows.forEach(r => {
-      const name = String(r.Name || "").trim();
-      if (!name) return;
-
-      ensureEntrant(standings, name);
-      const s = standings.get(name);
-
-      const pickAFC = String(r.AFCChampion || r["AFC Champion"] || "").trim();
-      const pickNFC = String(r.NFCChampion || r["NFC Champion"] || "").trim();
-      const pickSB  = String(r.SuperBowlChampion || r["Super Bowl Champion"] || r.SBChampion || "").trim();
-
-      const afcCorrect = champs.afcWinner && norm(pickAFC) === norm(champs.afcWinner);
-      const nfcCorrect = champs.nfcWinner && norm(pickNFC) === norm(champs.nfcWinner);
-      const sbCorrect  = champs.sbWinner  && norm(pickSB)  === norm(champs.sbWinner);
-
-      s.sb_afc = afcCorrect ? SC.PRED.afc : 0;
-      s.sb_nfc = nfcCorrect ? SC.PRED.nfc : 0;
-      s._sb_both_bonus = (champs.afcWinner && champs.nfcWinner && afcCorrect && nfcCorrect) ? SC.PRED.both : 0;
-      s.sb_champ = sbCorrect ? SC.PRED.champ : 0;
-    });
-  }
-
-  function finalizeTotals(standings) {
-    standings.forEach(s => {
-      const sbPredTotal = (s.sb_afc||0) + (s.sb_nfc||0) + (s._sb_both_bonus||0) + (s.sb_champ||0);
-      const sbGameTotal = (s.sb_adv||0) + (s.sb_ats||0) + (s.sb_ou||0);
-      s.sb_total = sbGameTotal + sbPredTotal;
-      s.total = (s.wc_total||0) + (s.div_total||0) + (s.conf_total||0) + (s.sb_total||0);
-      delete s._sb_both_bonus;
-    });
-  }
-
-  function renderTable(rows) {
-    // Sort by Total desc, Tie-breaker asc (NO alphabetical)
-    rows.sort((a,b) => (b.total - a.total) || (a.tiebreaker - b.tiebreaker));
-
-    tbodyEl.innerHTML = "";
-
-    let lastKey = null;
-    let lastRank = 0;
-
-    rows.forEach((r, idx) => {
-      // Stable tie key (avoid float noise)
-      const key = `${Number(r.total).toFixed(2)}|${Number(r.tiebreaker).toFixed(2)}`;
-      const rank = (key === lastKey) ? lastRank : (idx + 1);
-      lastKey = key;
-      lastRank = rank;
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${rank}</td>
-        <td class="name">${r.name}</td>
-
-        <td>${r.wc_adv}</td><td>${r.wc_ats}</td><td>${r.wc_ou}</td><td><b>${r.wc_total}</b></td>
-        <td>${r.div_adv}</td><td>${r.div_ats}</td><td>${r.div_ou}</td><td><b>${r.div_total}</b></td>
-        <td>${r.conf_adv}</td><td>${r.conf_ats}</td><td>${r.conf_ou}</td><td><b>${r.conf_total}</b></td>
-
-        <td>${r.sb_adv}</td><td>${r.sb_ats}</td><td>${r.sb_ou}</td>
-        <td>${r.sb_afc}</td><td>${r.sb_nfc}</td><td>${r.sb_champ}</td><td><b>${r.sb_total}</b></td>
-
-        <td><b>${r.total}</b></td>
-        <td>${Number(r.tiebreaker).toFixed(1).replace(/\.0$/, "")}</td>
-      `;
-      tbodyEl.appendChild(tr);
-    });
-  }
-
-  // ===== Collapse future rounds (Divisional + Conference + Super Bowl) =====
-  function setupFutureCollapse() {
-    if (!tableEl || !tableEl.tHead) return;
-
-    if (!document.getElementById("collapse-css")) {
-      const style = document.createElement("style");
-      style.id = "collapse-css";
-      style.textContent = `.hidden-col{display:none !important;}`;
-      document.head.appendChild(style);
-    }
-
-    let btn = document.getElementById("toggleFuture");
-    if (!btn) {
-      btn = document.createElement("button");
-      btn.className = "btn";
-      btn.id = "toggleFuture";
-      btn.type = "button";
-      btn.textContent = "Show future rounds";
-      const card = tableEl.closest(".card") || tableEl.parentElement;
-      if (card) card.insertBefore(btn, tableEl);
-      else tableEl.parentElement.insertBefore(btn, tableEl);
-    }
-
-    const futureGroupMatchers = [/divisional/i, /conference/i, /super bowl/i];
-
-    function getFutureColumnIndices() {
-      const rows = Array.from(tableEl.tHead.rows || []);
-      let targetRow = null;
-
-      for (const r of rows) {
-        const cells = Array.from(r.cells || []);
-        if (cells.some(c => futureGroupMatchers.some(rx => rx.test((c.textContent || "").trim())))) {
-          targetRow = r;
-          break;
-        }
-      }
-      if (!targetRow) return new Set();
-
-      const hidden = new Set();
-      let col = 0;
-
-      for (const cell of Array.from(targetRow.cells)) {
-        const span = cell.colSpan || 1;
-        const txt = (cell.textContent || "").trim();
-        const isFuture = futureGroupMatchers.some(rx => rx.test(txt));
-        if (isFuture) for (let i = col; i < col + span; i++) hidden.add(i);
-        col += span;
-      }
-      return hidden;
-    }
-
-    const futureCols = getFutureColumnIndices();
-
-    function applyCollapsed(collapsed) {
-      const allRows = [
-        ...Array.from(tableEl.tHead?.rows || []),
-        ...Array.from(tableEl.tBodies?.[0]?.rows || [])
-      ];
-
-      for (const tr of allRows) {
-        let col = (tr.parentElement === tableEl.tHead && tr.rowIndex === 1) ? 2 : 0;
-        for (const cell of Array.from(tr.cells || [])) {
+        for (const cell of Array.from(targetRow.cells)) {
           const span = cell.colSpan || 1;
-          let shouldHide = false;
-
-          for (let i = col; i < col + span; i++) {
-            if (futureCols.has(i)) { shouldHide = true; break; }
-          }
-
-          cell.classList.toggle("hidden-col", collapsed && shouldHide);
+          const txt = (cell.textContent || "").trim();
+          const isFuture = futureGroupMatchers.some(rx => rx.test(txt));
+          if (isFuture) for (let i = col; i < col + span; i++) hidden.add(i);
           col += span;
         }
+        return hidden;
       }
 
-      btn.textContent = collapsed ? "Show future rounds" : "Hide future rounds";
+      const futureCols = getFutureColumnIndices();
+
+      function applyCollapsed(collapsed) {
+        const allRows = [
+          ...Array.from(tableEl.tHead?.rows || []),
+          ...Array.from(tableEl.tBodies?.[0]?.rows || [])
+        ];
+
+        for (const tr of allRows) {
+          let col = 0;
+          for (const cell of Array.from(tr.cells || [])) {
+            const span = cell.colSpan || 1;
+            let shouldHide = false;
+
+            for (let i = col; i < col + span; i++) {
+              if (futureCols.has(i)) { shouldHide = true; break; }
+            }
+
+            cell.classList.toggle("hidden-col", collapsed && shouldHide);
+            col += span;
+          }
+        }
+
+        btn.textContent = collapsed ? "Show future rounds" : "Hide future rounds";
+      }
+
+      // default collapsed
+      window.__futureCollapsed = true;
+      applyCollapsed(window.__futureCollapsed);
+
+      btn.onclick = () => {
+        window.__futureCollapsed = !window.__futureCollapsed;
+        applyCollapsed(window.__futureCollapsed);
+      };
     }
 
-    window.__futureCollapsed = true; // default collapsed
-    window.__applyFutureCollapse = applyCollapsed;
+    async function main() {
+      if (!msgEl || !tbodyEl) return;
 
-    applyCollapsed(window.__futureCollapsed);
+      msgEl.textContent = "Loading…";
 
-    btn.onclick = () => {
-      window.__futureCollapsed = !window.__futureCollapsed;
-      applyCollapsed(window.__futureCollapsed);
-    };
-  }
+      const [linesText, wcText, divText, confText, sbText, predText] = await Promise.all([
+        fetchTextOrNull("lines.csv"),
+        fetchTextOrNull("wildcard_picks.csv"),
+        fetchTextOrNull("divisional_picks.csv"),
+        fetchTextOrNull("conference_picks.csv"),
+        fetchTextOrNull("superbowl_picks.csv"),
+        fetchTextOrNull("superbowl_predictions.csv")
+      ]);
 
-  async function main() {
-    if (!msgEl || !tbodyEl) return;
+      if (!linesText) { msgEl.textContent = "Missing lines.csv"; return; }
+      const linesById = parseLines(linesText);
 
-    msgEl.textContent = "Loading…";
+      let scoreboard = { events: [] };
+      try { scoreboard = await fetchJsonWithFallback(SCOREBOARD_URLS); } catch (e) {}
 
-    const [linesText, wcText, divText, confText, sbText, predText] = await Promise.all([
-      fetchTextOrNull("lines.csv"),
-      fetchTextOrNull("wildcard_picks.csv"),
-      fetchTextOrNull("divisional_picks.csv"),
-      fetchTextOrNull("conference_picks.csv"),
-      fetchTextOrNull("superbowl_picks.csv"),
-      fetchTextOrNull("superbowl_predictions.csv")
-    ]);
+      const eventsById = new Map();
+      (scoreboard.events || []).forEach(ev => { if (ev?.id) eventsById.set(String(ev.id), ev); });
 
-    if (!linesText) { msgEl.textContent = "Missing lines.csv"; return; }
-    const linesById = parseLines(linesText);
+      const standings = new Map();
 
-    // If scoreboard fails, still show 0’s (don’t brick the page)
-    let scoreboard = { events: [] };
-    try {
-      scoreboard = await fetchJsonWithFallback(SCOREBOARD_URLS);
-    } catch (e) {}
+      if (wcText)   scoreRound(parseCSV(wcText),   6, "wc",   SC.WC,   eventsById, linesById, standings);
+      if (divText)  scoreRound(parseCSV(divText),  4, "div",  SC.DIV,  eventsById, linesById, standings);
+      if (confText) scoreRound(parseCSV(confText), 2, "conf", SC.CONF, eventsById, linesById, standings);
+      if (sbText)   scoreRound(parseCSV(sbText),   1, "sb",   SC.SB,   eventsById, linesById, standings);
 
-    const eventsById = new Map();
-    (scoreboard.events || []).forEach(ev => { if (ev?.id) eventsById.set(String(ev.id), ev); });
+      const champs = getChampWinners(eventsById);
+      if (predText) scorePredictions(parseCSV(predText), champs, standings);
 
-    const standings = new Map();
+      finalizeTotals(standings);
+      renderTable(Array.from(standings.values()));
 
-    if (wcText)   scoreRound(parseCSV(wcText),   6, "wc",   SC.WC,   eventsById, linesById, standings);
-    if (divText)  scoreRound(parseCSV(divText),  4, "div",  SC.DIV,  eventsById, linesById, standings);
-    if (confText) scoreRound(parseCSV(confText), 2, "conf", SC.CONF, eventsById, linesById, standings);
-    if (sbText)   scoreRound(parseCSV(sbText),   1, "sb",   SC.SB,   eventsById, linesById, standings);
+      setupFutureCollapse();
 
-    const champs = getChampWinners(eventsById);
-    if (predText) scorePredictions(parseCSV(predText), champs, standings);
+      const missing = [];
+      if (!wcText) missing.push("wildcard_picks.csv");
+      if (!divText) missing.push("divisional_picks.csv");
+      if (!confText) missing.push("conference_picks.csv");
+      if (!sbText) missing.push("superbowl_picks.csv");
+      if (!predText) missing.push("superbowl_predictions.csv");
 
-    finalizeTotals(standings);
-    renderTable(Array.from(standings.values()));
+      const champBits = [
+        champs.afcWinner ? `AFC: ${champs.afcWinner}` : "AFC: TBD",
+        champs.nfcWinner ? `NFC: ${champs.nfcWinner}` : "NFC: TBD",
+        champs.sbWinner  ? `SB: ${champs.sbWinner}`  : "SB: TBD"
+      ].join(" | ");
 
-    setupFutureCollapse();
-    if (window.__applyFutureCollapse) window.__applyFutureCollapse(window.__futureCollapsed);
+      msgEl.textContent =
+        (missing.length ? `Missing: ${missing.join(", ")}. ` : "All pick files loaded. ") + champBits;
+    }
 
-    const missing = [];
-    if (!wcText) missing.push("wildcard_picks.csv");
-    if (!divText) missing.push("divisional_picks.csv");
-    if (!confText) missing.push("conference_picks.csv");
-    if (!sbText) missing.push("superbowl_picks.csv");
-    if (!predText) missing.push("superbowl_predictions.csv");
+    main().catch(err => {
+      console.error(err);
+      if (msgEl) msgEl.textContent = "Could not load standings right now.";
+    });
 
-    const champBits = [
-      champs.afcWinner ? `AFC: ${champs.afcWinner}` : "AFC: TBD",
-      champs.nfcWinner ? `NFC: ${champs.nfcWinner}` : "NFC: TBD",
-      champs.sbWinner  ? `SB: ${champs.sbWinner}`  : "SB: TBD"
-    ].join(" | ");
-
-    msgEl.textContent =
-      (missing.length ? `Missing: ${missing.join(", ")}. ` : "All pick files loaded. ") + champBits;
-  }
-
-  main().catch(err => {
-    console.error(err);
-    if (msgEl) msgEl.textContent = "Could not load standings right now.";
-  });
-
-})();
-</script>
+  })();
+  </script>
 </body>
 </html>
