@@ -150,7 +150,7 @@
   </div>
 
 <script>
-  // ESPN scoreboard via proxy fallback (7-day window)
+  // ESPN scoreboard via proxy fallback (WIDE window: past + future)
   const BASE_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 
   function yyyymmdd(d){
@@ -161,9 +161,13 @@
   }
 
   function buildScoreboardUrl(){
+    // IMPORTANT: include past days so completed games still show up
     const start = new Date();
+    start.setDate(start.getDate() - 10); // 10 days back
+
     const end = new Date();
-    end.setDate(start.getDate() + 7);
+    end.setDate(end.getDate() + 10);     // 10 days forward
+
     const range = `${yyyymmdd(start)}-${yyyymmdd(end)}`;
     return `${BASE_SCOREBOARD}?dates=${range}`;
   }
@@ -172,7 +176,8 @@
     const url = buildScoreboardUrl();
     return [
       "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(url),
-      "https://corsproxy.io/?" + encodeURIComponent(url)
+      "https://corsproxy.io/?" + encodeURIComponent(url),
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
     ];
   })();
 
@@ -211,14 +216,15 @@
   }
 
   async function fetchJsonWithFallback(urls) {
+    let lastErr = null;
     for (const u of urls) {
       try {
         const r = await fetch(u, { cache: "no-store" });
-        if (!r.ok) continue;
+        if (!r.ok) { lastErr = new Error(`HTTP ${r.status}`); continue; }
         return await r.json();
-      } catch (e) {}
+      } catch (e) { lastErr = e; }
     }
-    throw new Error("Failed to fetch scoreboard");
+    throw lastErr || new Error("Failed to fetch scoreboard");
   }
 
   async function fetchTextOrNull(path) {
@@ -235,9 +241,9 @@
     const map = new Map();
     const order = [];
     rows.forEach(r => {
-      const gid = String(r.GameID || "").trim();
-      const hs = Number(r.HomeSpread);
-      const tot = Number(r.Total);
+      const gid = String(r.GameID || r.GAMEID || r.gameid || "").trim();
+      const hs = Number(r.HomeSpread ?? r.homespread);
+      const tot = Number(r.Total ?? r.total);
       if (!gid || Number.isNaN(hs) || Number.isNaN(tot)) return;
       if (!map.has(gid)) order.push(gid);
       map.set(gid, { homeSpread: hs, total: tot });
@@ -290,7 +296,7 @@
     });
     row1 += `</tr>`;
 
-    // Row 2: Lines
+    // Row 2: Lines (always show if lines exist)
     let row2 = `<tr><th class="name">Lines</th>`;
     gameIds.forEach((gid, idx) => {
       const sepClass = (idx < gameIds.length - 1) ? "sep" : "";
@@ -298,11 +304,12 @@
       const ev = gid ? eventsById.get(gid) : null;
 
       if (!gid || !line) {
-        row2 += `<td colspan="3" class="${sepClass}">Lines TBD</td>`;
+        row2 += `<td colspan="3" class="${sepClass}">TBD</td>`;
         return;
       }
 
-      let spreadText = `HomeSpread: ${line.homeSpread}`;
+      // If ESPN exists, show team name with spread; otherwise just show numeric spread/total.
+      let spreadText = `${line.homeSpread}`;
       if (ev) {
         const info = eventToInfo(ev);
         spreadText =
@@ -311,25 +318,25 @@
             : `${info.awayName} -${line.homeSpread}`;
       }
 
-     row2 += `<td colspan="3" class="${sepClass}">
-         ${spreadText} &nbsp; | &nbsp; O/U: ${line.total}
-           </td>`;
+      row2 += `<td colspan="3" class="${sepClass}">
+                 ${spreadText} &nbsp; | &nbsp; O/U: ${line.total}
+               </td>`;
     });
     row2 += `</tr>`;
 
-    // Row 3: Results
-    let row3 = `<tr><th class="name correct-row-label">Results</th>`;
+    // Row 3: Results (label + cells)
+    let row3 = `<tr><th class="name">Results</th>`;
     for (let i = 1; i <= 6; i++) {
       const sepClass = (i < 6) ? "sep" : "";
       row3 += `
-        <td class="pending" id="res_adv_${i}">TBD</td>
-        <td class="pending" id="res_ats_${i}">TBD</td>
-        <td class="pending ${sepClass}" id="res_ou_${i}">TBD</td>
+        <td id="res_adv_${i}" class="pending">TBD</td>
+        <td id="res_ats_${i}" class="pending">TBD</td>
+        <td id="res_ou_${i}"  class="pending ${sepClass}">TBD</td>
       `;
     }
     row3 += `</tr>`;
 
-    // Row 4: Column labels
+    // Row 4: Pick labels
     let row4 = `<tr><th class="name">Name</th>`;
     for (let i = 1; i <= 6; i++) {
       const sepClass = (i < 6) ? "sep" : "";
@@ -393,8 +400,7 @@
   function renderGrid(pickRows, gameIds, eventsById, linesById) {
     tbodyEl.innerHTML = "";
 
-    const rows = pickRows
-      .filter(r => String(r.Name || "").trim() !== "");
+    const rows = pickRows.filter(r => String(r.Name || "").trim() !== ""); // keep CSV order
 
     rows.forEach(r => {
       const tr = document.createElement("tr");
@@ -406,7 +412,7 @@
 
         const advPick = String(r[`PickAdvancing${i}`] || "").trim();
         const atsPick = String(r[`PickATS${i}`] || "").trim();
-        const ouPick  = String(r[`Pick OU${i}`] || "").trim();
+        const ouPick  = String(r[`Pick OU${i}`] || "").trim(); // exact header includes space
 
         if (!gid || !ev) {
           tr.insertAdjacentHTML("beforeend", `
@@ -456,12 +462,15 @@
     const picksText = await fetchTextOrNull("wildcard_picks.csv");
     const linesText = await fetchTextOrNull("lines.csv");
 
-    const { map: linesById, order: lineOrder } = linesText ? parseLinesWithOrder(linesText) : { map: new Map(), order: [] };
+    const { map: linesById, order: lineOrder } =
+      linesText ? parseLinesWithOrder(linesText) : { map: new Map(), order: [] };
 
+    // Always load scoreboard so matchups/results can show (now includes past games too)
     const data = await fetchJsonWithFallback(SCOREBOARD_URLS);
 
     const eventsById = new Map();
     (data.events || []).forEach(ev => {
+      // index by BOTH ids (some places use event.id, others use competition.id)
       if (ev?.id) eventsById.set(String(ev.id), ev);
       const compId = ev?.competitions?.[0]?.id;
       if (compId) eventsById.set(String(compId), ev);
@@ -485,9 +494,7 @@
 
     buildHeaders(matchups, gameIds, eventsById, linesById);
 
-    if (!linesText) {
-      msgEl.textContent = "Missing lines.csv (spreads/totals).";
-    }
+    if (!linesText) msgEl.textContent = "Missing lines.csv (spreads/totals).";
 
     if (!picksText) {
       msgEl.textContent = (msgEl.textContent ? msgEl.textContent + " " : "") +
