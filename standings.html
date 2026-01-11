@@ -66,7 +66,11 @@
     .hidden-col{ display:none !important; }
 
     /* ===== TABLE ===== */
-table { border-collapse: collapse; width: 100%; min-width: 1050px; }
+    #tbl{
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 1200px;
+      table-layout: fixed; /* makes widths predictable */
     }
     #tbl th, #tbl td{
       border: 1px solid var(--grid);
@@ -138,7 +142,11 @@ table { border-collapse: collapse; width: 100%; min-width: 1050px; }
     }
 
     #msg{ color:var(--muted); font-size:12px; margin-top:10px; }
-
+    
+ /* Widen Rank column so header fits */
+    #tbl thead th:first-child,
+#tbl tbody td:first-child {
+  width: 60px;
 }
   </style>
 </head>
