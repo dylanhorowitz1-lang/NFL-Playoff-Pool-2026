@@ -106,6 +106,49 @@
 #tbl tbody td:nth-child(21) {
   border-right: 2px solid rgba(255,255,255,.22);
 }
+   /* === Column width tuning === */
+
+/* Rank */
+#tbl thead th:nth-child(1),
+#tbl tbody td:nth-child(1) {
+  width: 42px;
+}
+
+/* Entrant name */
+#tbl thead th:nth-child(2),
+#tbl tbody td:nth-child(2) {
+  width: 160px;
+}
+
+/* Standard pick columns (Adv / Spread / O-U) */
+#tbl thead th,
+#tbl tbody td {
+  width: 58px;
+}
+
+/* Subtotals (WC / DIV / CONF / SB) — slightly tighter */
+#tbl thead th:nth-child(6),
+#tbl tbody td:nth-child(6),
+#tbl thead th:nth-child(10),
+#tbl tbody td:nth-child(10),
+#tbl thead th:nth-child(14),
+#tbl tbody td:nth-child(14),
+#tbl thead th:nth-child(21),
+#tbl tbody td:nth-child(21) {
+  width: 64px;
+}
+
+/* Overall Total */
+#tbl thead th:nth-child(22),
+#tbl tbody td:nth-child(22) {
+  width: 70px;
+}
+
+/* Tie-breaker (smallest) */
+#tbl thead th:nth-child(23),
+#tbl tbody td:nth-child(23) {
+  width: 55px;
+}
 </style>
 </head>
 <body>
