@@ -121,6 +121,8 @@
   </div>
 
 <script>
+ <script>
+  // ===================== ESPN SCOREBOARD (for finals + champ winners) =====================
   const SCOREBOARD_URLS = [
     "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(
       "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
@@ -130,6 +132,7 @@
     )
   ];
 
+  // ===================== SCORING WEIGHTS =====================
   const SC = {
     WC:   { adv: 3,    ats: 2,   ou: 1   },
     DIV:  { adv: 4.5,  ats: 3,   ou: 1.5 },
@@ -141,6 +144,7 @@
   const msgEl = document.getElementById("msg");
   const tbodyEl = document.getElementById("tbody");
 
+  // ===================== HELPERS =====================
   function norm(s) { return String(s || "").trim().toLowerCase(); }
 
   function splitCSVLine(line) {
@@ -194,9 +198,9 @@
     const rows = parseCSV(linesText);
     const map = new Map();
     rows.forEach(r => {
-      const gid = String(r.GameID || "").trim();
-      const hs = Number(r.HomeSpread);
-      const tot = Number(r.Total);
+      const gid = String(r.GameID || r.GAMEID || r.gameid || "").trim();
+      const hs = Number(r.HomeSpread ?? r.homespread);
+      const tot = Number(r.Total ?? r.total);
       if (!gid || Number.isNaN(hs) || Number.isNaN(tot)) return;
       map.set(gid, { homeSpread: hs, total: tot });
     });
@@ -217,7 +221,10 @@
     const isFinal = comp?.status?.type?.completed === true;
     const winnerTeam = isFinal ? (teams.find(t => t.winner === true)?.team?.displayName || "") : "";
 
-    return { awayName, homeName, awayScore, homeScore, isFinal, winnerTeam, name: (ev.name || ev.shortName || "") };
+    return {
+      awayName, homeName, awayScore, homeScore, isFinal, winnerTeam,
+      name: (ev.name || ev.shortName || "")
+    };
   }
 
   function computeATSWinnerAndHomeMargin(info, homeSpread) {
@@ -300,6 +307,7 @@
             if (side && side === correctSide) {
               s[`${prefix}_ats`] += weights.ats;
             } else {
+              // Tie-breaker miss amount (ATS pick only): losing picks earn points, winning earn 0
               let miss = 0;
               if (side === "home") miss = Math.max(0, -homeMargin);
               else if (side === "away") miss = Math.max(0, homeMargin);
@@ -316,7 +324,7 @@
       if (prefix === "wc")   s.wc_total   = s.wc_adv + s.wc_ats + s.wc_ou;
       if (prefix === "div")  s.div_total  = s.div_adv + s.div_ats + s.div_ou;
       if (prefix === "conf") s.conf_total = s.conf_adv + s.conf_ats + s.conf_ou;
-      if (prefix === "sb")   s.sb_game_total = (s.sb_adv||0) + (s.sb_ats||0) + (s.sb_ou||0);
+      if (prefix === "sb")   {/* computed in finalizeTotals */}
     });
   }
 
@@ -341,10 +349,9 @@
       ensureEntrant(standings, name);
       const s = standings.get(name);
 
-      // IMPORTANT: your CSV headers have spaces, so use bracket notation
-      const pickAFC = String(r["AFC Champion"] || "").trim();
-      const pickNFC = String(r["NFC Champion"] || "").trim();
-      const pickSB  = String(r["Super Bowl Champion"] || "").trim();
+      const pickAFC = String(r.AFCChampion || r["AFC Champion"] || "").trim();
+      const pickNFC = String(r.NFCChampion || r["NFC Champion"] || "").trim();
+      const pickSB  = String(r.SuperBowlChampion || r["Super Bowl Champion"] || r.SBChampion || "").trim();
 
       const afcCorrect = champs.afcWinner && norm(pickAFC) === norm(champs.afcWinner);
       const nfcCorrect = champs.nfcWinner && norm(pickNFC) === norm(champs.nfcWinner);
@@ -364,80 +371,140 @@
       s.sb_total = sbGameTotal + sbPredTotal;
       s.total = (s.wc_total||0) + (s.div_total||0) + (s.conf_total||0) + (s.sb_total||0);
       delete s._sb_both_bonus;
-      delete s.sb_game_total;
     });
   }
 
-function renderTable(rows) {
-  rows.sort((a,b) =>
-    (b.total - a.total) ||
-    (a.tiebreaker - b.tiebreaker)
-  );
+  // ===================== RENDER (WITH TIES) =====================
+  function renderTable(rows) {
+    // Sort by Total desc, then Tie-breaker asc (NO alphabetical)
+    rows.sort((a,b) => (b.total - a.total) || (a.tiebreaker - b.tiebreaker));
 
-  tbodyEl.innerHTML = "";
+    tbodyEl.innerHTML = "";
 
-  rows.forEach((r, idx) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${idx + 1}</td>
-      <td class="name">${r.name}</td>
+    let lastKey = null;
+    let lastRank = 0;
 
-      <td>${r.wc_adv}</td><td>${r.wc_ats}</td><td>${r.wc_ou}</td><td><b>${r.wc_total}</b></td>
-      <td>${r.div_adv}</td><td>${r.div_ats}</td><td>${r.div_ou}</td><td><b>${r.div_total}</b></td>
-      <td>${r.conf_adv}</td><td>${r.conf_ats}</td><td>${r.conf_ou}</td><td><b>${r.conf_total}</b></td>
+    rows.forEach((r, idx) => {
+      // Stable tie key (avoid float noise)
+      const key = `${Number(r.total).toFixed(2)}|${Number(r.tiebreaker).toFixed(2)}`;
+      const rank = (key === lastKey) ? lastRank : (idx + 1);
+      lastKey = key;
+      lastRank = rank;
 
-      <td>${r.sb_adv}</td><td>${r.sb_ats}</td><td>${r.sb_ou}</td>
-      <td>${r.sb_afc}</td><td>${r.sb_nfc}</td><td>${r.sb_champ}</td><td><b>${r.sb_total}</b></td>
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${rank}</td>
+        <td class="name">${r.name}</td>
 
-      <td><b>${r.total}</b></td>
-      <td>${Number(r.tiebreaker).toFixed(1).replace(/\.0$/, "")}</td>
-    `;
-    tbodyEl.appendChild(tr);
-  });
-}
+        <td>${r.wc_adv}</td><td>${r.wc_ats}</td><td>${r.wc_ou}</td><td><b>${r.wc_total}</b></td>
+        <td>${r.div_adv}</td><td>${r.div_ats}</td><td>${r.div_ou}</td><td><b>${r.div_total}</b></td>
+        <td>${r.conf_adv}</td><td>${r.conf_ats}</td><td>${r.conf_ou}</td><td><b>${r.conf_total}</b></td>
 
-  function initCollapse() {
-    // ensure hidden-col exists (in case CSS missed)
+        <td>${r.sb_adv}</td><td>${r.sb_ats}</td><td>${r.sb_ou}</td>
+        <td>${r.sb_afc}</td><td>${r.sb_nfc}</td><td>${r.sb_champ}</td><td><b>${r.sb_total}</b></td>
+
+        <td><b>${r.total}</b></td>
+        <td>${Number(r.tiebreaker).toFixed(1).replace(/\.0$/, "")}</td>
+      `;
+      tbodyEl.appendChild(tr);
+    });
+  }
+
+  // ===================== COLLAPSE FUTURE ROUNDS (ROBUST AFTER RENDER) =====================
+  function setupFutureCollapse() {
+    // CSS helper
     if (!document.getElementById("collapse-css")) {
-      const st = document.createElement("style");
-      st.id = "collapse-css";
-      st.textContent = `.hidden-col{display:none !important;}`;
-      document.head.appendChild(st);
+      const style = document.createElement("style");
+      style.id = "collapse-css";
+      style.textContent = `.hidden-col{display:none !important;}`;
+      document.head.appendChild(style);
     }
 
     const table = document.getElementById("tbl");
-    if (!table) return;
+    if (!table || !table.tHead) return;
 
-    // insert one toggle button above the table (inside the same card)
+    // Add ONE toggle button above table
     let btn = document.getElementById("toggleFuture");
     if (!btn) {
       btn = document.createElement("button");
       btn.className = "btn";
       btn.id = "toggleFuture";
       btn.type = "button";
-      btn.setAttribute("aria-pressed", "true"); // collapsed default
       btn.textContent = "Show future rounds";
+
       const card = table.closest(".card") || table.parentElement;
-      card.insertBefore(btn, table);
+      if (card) card.insertBefore(btn, table);
+      else table.parentElement.insertBefore(btn, table);
     }
 
-    function setCollapsed(collapsed) {
-      document.querySelectorAll(".future-round").forEach(el => {
-        el.classList.toggle("hidden-col", collapsed);
-      });
-      btn.setAttribute("aria-pressed", String(collapsed));
+    const futureGroupMatchers = [/divisional/i, /conference/i, /super bowl/i];
+
+    function getFutureColumnIndices() {
+      const rows = Array.from(table.tHead.rows || []);
+      let targetRow = null;
+
+      for (const r of rows) {
+        const cells = Array.from(r.cells || []);
+        if (cells.some(c => futureGroupMatchers.some(rx => rx.test((c.textContent || "").trim())))) {
+          targetRow = r;
+          break;
+        }
+      }
+      if (!targetRow) return new Set();
+
+      const hidden = new Set();
+      let col = 0;
+
+      for (const cell of Array.from(targetRow.cells)) {
+        const span = cell.colSpan || 1;
+        const txt = (cell.textContent || "").trim();
+        const isFuture = futureGroupMatchers.some(rx => rx.test(txt));
+        if (isFuture) for (let i = col; i < col + span; i++) hidden.add(i);
+        col += span;
+      }
+      return hidden;
+    }
+
+    const futureCols = getFutureColumnIndices();
+
+    function applyCollapsed(collapsed) {
+      const allRows = [
+        ...Array.from(table.tHead?.rows || []),
+        ...Array.from(table.tBodies?.[0]?.rows || [])
+      ];
+
+      for (const tr of allRows) {
+        let col = 0;
+        for (const cell of Array.from(tr.cells || [])) {
+          const span = cell.colSpan || 1;
+          let shouldHide = false;
+
+          for (let i = col; i < col + span; i++) {
+            if (futureCols.has(i)) { shouldHide = true; break; }
+          }
+
+          cell.classList.toggle("hidden-col", collapsed && shouldHide);
+          col += span;
+        }
+      }
+
       btn.textContent = collapsed ? "Show future rounds" : "Hide future rounds";
+      btn.setAttribute("aria-pressed", String(collapsed));
     }
 
-    // default collapsed
-    setCollapsed(true);
+    // Persist state globally so we can reapply after re-render
+    window.__futureCollapsed = true; // default collapsed
+    window.__applyFutureCollapse = applyCollapsed;
+
+    applyCollapsed(window.__futureCollapsed);
 
     btn.addEventListener("click", () => {
-      const collapsed = btn.getAttribute("aria-pressed") === "true";
-      setCollapsed(!collapsed);
+      window.__futureCollapsed = !window.__futureCollapsed;
+      applyCollapsed(window.__futureCollapsed);
     });
   }
 
+  // ===================== MAIN =====================
   async function main() {
     msgEl.textContent = "Loading…";
 
@@ -469,7 +536,10 @@ function renderTable(rows) {
 
     finalizeTotals(standings);
     renderTable(Array.from(standings.values()));
-    initCollapse();
+
+    // Set up collapse once, then ALWAYS reapply after render
+    setupFutureCollapse();
+    if (window.__applyFutureCollapse) window.__applyFutureCollapse(window.__futureCollapsed);
 
     const missing = [];
     if (!wcText) missing.push("wildcard_picks.csv");
@@ -485,8 +555,7 @@ function renderTable(rows) {
     ].join(" | ");
 
     msgEl.textContent =
-      (missing.length ? `Missing: ${missing.join(", ")}. ` : "All pick files loaded. ")
-      + champBits;
+      (missing.length ? `Missing: ${missing.join(", ")}. ` : "All pick files loaded. ") + champBits;
   }
 
   main().catch(err => {
