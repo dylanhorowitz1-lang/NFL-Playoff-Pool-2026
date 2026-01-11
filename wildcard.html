@@ -96,10 +96,21 @@
     }
 
     /* result colors */
-    .pending { background: #2a3357; }
-    .correct { background: #1f6f4a; }
-    .wrong   { background: #7a2b3a; }
-    .push    { background: #6b5b1f; }
+.correct { background: rgba(94, 234, 212, 0.22); /* muted teal */
+  color: #e8fff8;
+}
+
+.wrong { background: rgba(239, 68, 68, 0.22); /* muted red */
+  color: #ffecec;
+}
+
+.push { background: rgba(234, 179, 8, 0.22); /* muted amber */
+  color: #fff6db;
+}
+
+.pending { background: rgba(255, 255, 255, 0.08); /* subtle neutral */
+  color: var(--muted);
+}
 
     /* results row label */
     .correct-row-label{
