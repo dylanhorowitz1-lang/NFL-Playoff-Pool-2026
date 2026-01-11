@@ -368,29 +368,42 @@
     });
   }
 
-  function renderTable(rows) {
-    rows.sort((a,b) => (b.total - a.total) || (a.tiebreaker - b.tiebreaker));
-    tbodyEl.innerHTML = "";
-    rows.forEach((r, idx) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${idx + 1}</td>
-        <td class="name">${r.name}</td>
+ function renderTable(rows) {
+  // Keep your sorting (NO alphabetical tiebreaker)
+  rows.sort((a,b) => (b.total - a.total) || (a.tiebreaker - b.tiebreaker));
 
-        <td>${r.wc_adv}</td><td>${r.wc_ats}</td><td>${r.wc_ou}</td><td><b>${r.wc_total}</b></td>
+  tbodyEl.innerHTML = "";
 
-        <td class="future-round">${r.div_adv}</td><td class="future-round">${r.div_ats}</td><td class="future-round">${r.div_ou}</td><td class="future-round"><b>${r.div_total}</b></td>
-        <td class="future-round">${r.conf_adv}</td><td class="future-round">${r.conf_ats}</td><td class="future-round">${r.conf_ou}</td><td class="future-round"><b>${r.conf_total}</b></td>
+  let lastKey = null;
+  let lastRank = 0;
 
-        <td class="future-round">${r.sb_adv}</td><td class="future-round">${r.sb_ats}</td><td class="future-round">${r.sb_ou}</td>
-        <td class="future-round">${r.sb_afc}</td><td class="future-round">${r.sb_nfc}</td><td class="future-round">${r.sb_champ}</td><td class="future-round"><b>${r.sb_total}</b></td>
+  rows.forEach((r, idx) => {
+    // Tie key = Total + Tie-breaker
+    const key = `${r.total}|${Number(r.tiebreaker)}`;
 
-        <td><b>${r.total}</b></td>
-        <td>${Number(r.tiebreaker).toFixed(1).replace(/\.0$/, "")}</td>
-      `;
-      tbodyEl.appendChild(tr);
-    });
-  }
+    // Competition ranking: 1,1,3,4...
+    const rank = (key === lastKey) ? lastRank : (idx + 1);
+    lastKey = key;
+    lastRank = rank;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${rank}</td>
+      <td class="name">${r.name}</td>
+
+      <td>${r.wc_adv}</td><td>${r.wc_ats}</td><td>${r.wc_ou}</td><td><b>${r.wc_total}</b></td>
+      <td>${r.div_adv}</td><td>${r.div_ats}</td><td>${r.div_ou}</td><td><b>${r.div_total}</b></td>
+      <td>${r.conf_adv}</td><td>${r.conf_ats}</td><td>${r.conf_ou}</td><td><b>${r.conf_total}</b></td>
+
+      <td>${r.sb_adv}</td><td>${r.sb_ats}</td><td>${r.sb_ou}</td>
+      <td>${r.sb_afc}</td><td>${r.sb_nfc}</td><td>${r.sb_champ}</td><td><b>${r.sb_total}</b></td>
+
+      <td><b>${r.total}</b></td>
+      <td>${Number(r.tiebreaker).toFixed(1).replace(/\\.0$/, "")}</td>
+    `;
+    tbodyEl.appendChild(tr);
+  });
+}
 
   function initCollapse() {
     // ensure hidden-col exists (in case CSS missed)
