@@ -142,12 +142,12 @@
     }
 
     #msg{ color:var(--muted); font-size:12px; margin-top:10px; }
-    
- /* Widen Rank column so header fits */
+
+    /* Widen Rank column so header fits */
     #tbl thead th:first-child,
-#tbl tbody td:first-child {
-  width: 60px;
-}
+    #tbl tbody td:first-child {
+      width: 60px;
+    }
   </style>
 </head>
 <body>
@@ -238,6 +238,15 @@
     )
   ];
 
+  // ===== ESPN SUMMARY (fallback when scoreboard no longer contains past games) =====
+  function summaryUrlsForGame(gid){
+    const base = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=" + encodeURIComponent(gid);
+    return [
+      "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(base),
+      "https://corsproxy.io/?" + encodeURIComponent(base)
+    ];
+  }
+
   // ===== SCORING WEIGHTS =====
   const SC = {
     WC:   { adv: 3,    ats: 2,   ou: 1   },
@@ -289,7 +298,7 @@
         return await r.json();
       } catch (e) {}
     }
-    throw new Error("Failed to fetch scoreboard");
+    throw new Error("Failed to fetch JSON");
   }
 
   async function fetchTextOrNull(path) {
@@ -313,8 +322,21 @@
     return map;
   }
 
+  // Normalize differences between scoreboard events and summary responses
+  function getCompetition(ev){
+    // scoreboard: ev.competitions[0]
+    if (ev?.competitions?.[0]) return ev.competitions[0];
+    // summary: header.competitions[0]
+    if (ev?.header?.competitions?.[0]) return ev.header.competitions[0];
+    return null;
+  }
+
+  function getEventName(ev){
+    return ev?.name || ev?.shortName || ev?.header?.name || ev?.header?.shortName || "";
+  }
+
   function eventInfo(ev) {
-    const comp = ev.competitions?.[0];
+    const comp = getCompetition(ev);
     const teams = comp?.competitors || [];
     const away = teams.find(t => t.homeAway === "away");
     const home = teams.find(t => t.homeAway === "home");
@@ -326,7 +348,7 @@
 
     const isFinal = comp?.status?.type?.completed === true;
     const winnerTeam = isFinal ? (teams.find(t => t.winner === true)?.team?.displayName || "") : "";
-    return { awayName, homeName, awayScore, homeScore, isFinal, winnerTeam, name: (ev.name || ev.shortName || "") };
+    return { awayName, homeName, awayScore, homeScore, isFinal, winnerTeam, name: getEventName(ev) };
   }
 
   function computeATSWinnerAndHomeMargin(info, homeSpread) {
@@ -424,6 +446,7 @@
       if (prefix === "wc")   s.wc_total   = s.wc_adv + s.wc_ats + s.wc_ou;
       if (prefix === "div")  s.div_total  = s.div_adv + s.div_ats + s.div_ou;
       if (prefix === "conf") s.conf_total = s.conf_adv + s.conf_ats + s.conf_ou;
+      if (prefix === "sb")   s.sb_total   = (s.sb_adv||0) + (s.sb_ats||0) + (s.sb_ou||0) + (s.sb_afc||0) + (s.sb_nfc||0) + (s.sb_champ||0);
     });
   }
 
@@ -474,16 +497,13 @@
   }
 
   function renderTable(rows) {
-    // Sort by Total desc, Tie-breaker asc (NO alphabetical)
     rows.sort((a,b) => (b.total - a.total) || (a.tiebreaker - b.tiebreaker));
-
     tbodyEl.innerHTML = "";
 
     let lastKey = null;
     let lastRank = 0;
 
     rows.forEach((r, idx) => {
-      // Stable tie key (avoid float noise)
       const key = `${Number(r.total).toFixed(2)}|${Number(r.tiebreaker).toFixed(2)}`;
       const rank = (key === lastKey) ? lastRank : (idx + 1);
       lastKey = key;
@@ -595,7 +615,7 @@
       btn.textContent = collapsed ? "Show future rounds" : "Hide future rounds";
     }
 
-    window.__futureCollapsed = true; // default collapsed
+    window.__futureCollapsed = true;
     window.__applyFutureCollapse = applyCollapsed;
 
     applyCollapsed(window.__futureCollapsed);
@@ -604,6 +624,41 @@
       window.__futureCollapsed = !window.__futureCollapsed;
       applyCollapsed(window.__futureCollapsed);
     };
+  }
+
+  function collectNeededGameIds(wcRows, divRows, confRows, sbRows){
+    const needed = new Set();
+    const addFrom = (rows, nGames) => {
+      (rows || []).forEach(r => {
+        const ids = extractGameIdsWide(r, nGames);
+        ids.forEach(id => { if (id) needed.add(String(id)); });
+      });
+    };
+    addFrom(wcRows, 6);
+    addFrom(divRows, 4);
+    addFrom(confRows, 2);
+    addFrom(sbRows, 1);
+    return needed;
+  }
+
+  async function hydrateMissingEvents(eventsById, neededIds){
+    const missing = [];
+    neededIds.forEach(gid => {
+      if (!eventsById.has(String(gid))) missing.push(String(gid));
+    });
+
+    if (!missing.length) return;
+
+    // Fetch each missing game via ESPN summary endpoint
+    await Promise.all(missing.map(async (gid) => {
+      try {
+        const data = await fetchJsonWithFallback(summaryUrlsForGame(gid));
+        // Store the full summary response; eventInfo() handles it
+        eventsById.set(String(gid), data);
+      } catch (e) {
+        // If summary also fails, we just leave it missing and scoring will skip it
+      }
+    }));
   }
 
   async function main() {
@@ -623,6 +678,12 @@
     if (!linesText) { msgEl.textContent = "Missing lines.csv"; return; }
     const linesById = parseLines(linesText);
 
+    const wcRows   = wcText   ? parseCSV(wcText)   : [];
+    const divRows  = divText  ? parseCSV(divText)  : [];
+    const confRows = confText ? parseCSV(confText) : [];
+    const sbRows   = sbText   ? parseCSV(sbText)   : [];
+    const predRows = predText ? parseCSV(predText) : [];
+
     // If scoreboard fails, still show 0’s (don’t brick the page)
     let scoreboard = { events: [] };
     try {
@@ -632,15 +693,19 @@
     const eventsById = new Map();
     (scoreboard.events || []).forEach(ev => { if (ev?.id) eventsById.set(String(ev.id), ev); });
 
+    // NEW: ensure we can still score past rounds even after scoreboard rotates weeks
+    const neededIds = collectNeededGameIds(wcRows, divRows, confRows, sbRows);
+    await hydrateMissingEvents(eventsById, neededIds);
+
     const standings = new Map();
 
-    if (wcText)   scoreRound(parseCSV(wcText),   6, "wc",   SC.WC,   eventsById, linesById, standings);
-    if (divText)  scoreRound(parseCSV(divText),  4, "div",  SC.DIV,  eventsById, linesById, standings);
-    if (confText) scoreRound(parseCSV(confText), 2, "conf", SC.CONF, eventsById, linesById, standings);
-    if (sbText)   scoreRound(parseCSV(sbText),   1, "sb",   SC.SB,   eventsById, linesById, standings);
+    if (wcRows.length)   scoreRound(wcRows,   6, "wc",   SC.WC,   eventsById, linesById, standings);
+    if (divRows.length)  scoreRound(divRows,  4, "div",  SC.DIV,  eventsById, linesById, standings);
+    if (confRows.length) scoreRound(confRows, 2, "conf", SC.CONF, eventsById, linesById, standings);
+    if (sbRows.length)   scoreRound(sbRows,   1, "sb",   SC.SB,   eventsById, linesById, standings);
 
     const champs = getChampWinners(eventsById);
-    if (predText) scorePredictions(parseCSV(predText), champs, standings);
+    if (predRows.length) scorePredictions(predRows, champs, standings);
 
     finalizeTotals(standings);
     renderTable(Array.from(standings.values()));
@@ -648,12 +713,12 @@
     setupFutureCollapse();
     if (window.__applyFutureCollapse) window.__applyFutureCollapse(window.__futureCollapsed);
 
-    const missing = [];
-    if (!wcText) missing.push("wildcard_picks.csv");
-    if (!divText) missing.push("divisional_picks.csv");
-    if (!confText) missing.push("conference_picks.csv");
-    if (!sbText) missing.push("superbowl_picks.csv");
-    if (!predText) missing.push("superbowl_predictions.csv");
+    const missingFiles = [];
+    if (!wcText) missingFiles.push("wildcard_picks.csv");
+    if (!divText) missingFiles.push("divisional_picks.csv");
+    if (!confText) missingFiles.push("conference_picks.csv");
+    if (!sbText) missingFiles.push("superbowl_picks.csv");
+    if (!predText) missingFiles.push("superbowl_predictions.csv");
 
     const champBits = [
       champs.afcWinner ? `AFC: ${champs.afcWinner}` : "AFC: TBD",
@@ -662,7 +727,7 @@
     ].join(" | ");
 
     msgEl.textContent =
-      (missing.length ? `Missing: ${missing.join(", ")}. ` : "All pick files loaded. ") + champBits;
+      (missingFiles.length ? `Missing: ${missingFiles.join(", ")}. ` : "All pick files loaded. ") + champBits;
   }
 
   main().catch(err => {
