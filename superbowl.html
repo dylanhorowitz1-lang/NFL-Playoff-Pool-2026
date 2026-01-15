@@ -83,11 +83,11 @@
     .wrong   { background: #7a2b3a; }   /* red */
     .push    { background: #6b5b1f; }   /* yellow */
 
-    /* Extra: eliminated team text */
+    /* Eliminated team text (NO STRIKETHROUGH) */
     .eliminated{
-      color: #ffb4c0; /* readable on dark */
-      text-decoration: line-through;
-      font-weight: 700;
+      color: #ff7b92;
+      font-weight: 800;
+      text-decoration: none;
     }
 
     /* Results row styling */
@@ -162,24 +162,33 @@
 
   // 1) Seed order list (14 teams) EXACTLY as ESPN/team names appear in your CSV.
   const SEED_ORDER = [
-      "Denver Broncos", "New England Patriots", "Jacksonville Jaguars", "Pittsburgh Steelers", "Houston Texans", "Buffalo Bills", "Los Angeles Chargers", 
-      "Seattle Seahawks", "Chicago Bears", "Philadelphia Eagles", "Carolina Panthers", "Los Angeles Rams", "San Francisco 49ers", "Green Bay Packers" 
+      "Denver Broncos", "New England Patriots", "Jacksonville Jaguars", "Pittsburgh Steelers", "Houston Texans", "Buffalo Bills", "Los Angeles Chargers",
+      "Seattle Seahawks", "Chicago Bears", "Philadelphia Eagles", "Carolina Panthers", "Los Angeles Rams", "San Francisco 49ers", "Green Bay Packers"
   ];
 
   // 2) Eliminated teams list — add team names here as they get eliminated.
   const ELIMINATED_TEAMS = [
       "Jacksonville Jaguars", "Pittsburgh Steelers", "Los Angeles Chargers", "Philadelphia Eagles", "Carolina Panthers", "Green Bay Packers"
   ];
-    function isEliminated(teamName) {
-    const t = String(teamName || "").trim().toLowerCase();
-      if (!t) return false;
 
-  // If your list is empty, nothing should be red
-  if (!Array.isArray(ELIMINATED_TEAMS) || ELIMINATED_TEAMS.length === 0) return false;
+  // Normalize helpers so matching is strict but resilient to spacing/case
+  function normalizeTeamName(s){
+    return String(s || "")
+      .replace(/\u00A0/g, " ")
+      .trim()
+      .toLowerCase();
+  }
 
-  return ELIMINATED_TEAMS.some(x => String(x || "").trim().toLowerCase() === t);
-}
-  
+  const ELIMINATED_SET = new Set(ELIMINATED_TEAMS.map(normalizeTeamName));
+
+  function isEliminated(teamName) {
+    const key = normalizeTeamName(teamName);
+    if (!key) return false;
+    if (key === "tbd") return false;
+    if (!ELIMINATED_SET.size) return false;
+    return ELIMINATED_SET.has(key);
+  }
+
   // =========================
   // RESULTS (TBD now)
   // Fill these in later when known
@@ -236,20 +245,19 @@
     } catch (e) { return null; }
   }
 
-function renderTeam(teamName) {
-  const t = String(teamName || "").trim();
-  if (!t || t.toUpperCase() === "TBD") return t; // never style TBD
-  const cls = isEliminated(t) ? "eliminated" : "";
-  return `<span class="${cls}">${t}</span>`;
-}
+  // Rendering helpers
+  function renderTeam(teamName) {
+    const t = String(teamName || "").trim();
+    if (!t || t.toUpperCase() === "TBD") return t; // never style TBD/blank
+    const cls = isEliminated(t) ? "eliminated" : "";
+    return cls ? `<span class="${cls}">${t}</span>` : t;
+  }
 
   function fmtPickCell(teamName, correctTeamName) {
     const t = String(teamName || "").trim();
     if (!t) return { html: "", cls: "pending" };
 
-    // eliminated styling (text)
-    const elim = isEliminated(t);
-    const inner = elim ? `<span class="eliminated">${t}</span>` : t;
+    const inner = renderTeam(t);
 
     // correct highlighting only if correctTeamName is set
     if (correctTeamName && norm(t) === norm(correctTeamName)) {
@@ -265,8 +273,12 @@ function renderTeam(teamName) {
     return { html: inner, cls: "pending" };
   }
 
+  function fmtCount(n){
+    const x = Number(n);
+    return (!Number.isFinite(x) || x === 0) ? "-" : String(x);
+  }
+
   function buildHeader() {
-    // Row 1: Results (above everything)
     const afcTxt = ACTUAL.afc ? ACTUAL.afc : "TBD";
     const nfcTxt = ACTUAL.nfc ? ACTUAL.nfc : "TBD";
     const sbTxt  = ACTUAL.sb  ? ACTUAL.sb  : "TBD";
@@ -280,7 +292,6 @@ function renderTeam(teamName) {
       </tr>
     `;
 
-    // Row 2: column headers
     const rowCols = `
       <tr>
         <th class="name">Entrant</th>
@@ -296,13 +307,11 @@ function renderTeam(teamName) {
   function renderRows(rows) {
     tbodyEl.innerHTML = "";
 
-    // Keep CSV order, just filter blanks
     rows
       .filter(r => String(r.Name || "").trim() !== "")
       .forEach(r => {
         const name = String(r.Name || "").trim();
 
-        // Support both "AFCChampion" and "AFC Champion" etc.
         const afcPick = String(r.AFCChampion || r["AFC Champion"] || "").trim();
         const nfcPick = String(r.NFCChampion || r["NFC Champion"] || "").trim();
         const sbPick  = String(r.SuperBowlChampion || r["Super Bowl Champion"] || r.SBChampion || "").trim();
@@ -323,7 +332,6 @@ function renderTeam(teamName) {
   }
 
   function buildDistribution(rows) {
-    // Count appearances across the 3 pick columns
     const counts = new Map(); // team -> {afc,nfc,sb}
 
     function ensure(team) {
@@ -343,7 +351,6 @@ function renderTeam(teamName) {
         if (sbPick)  ensure(sbPick).sb++;
       });
 
-    // Render in SEED_ORDER if provided; otherwise use whatever teams appear (sorted A->Z)
     const teams = (SEED_ORDER && SEED_ORDER.length)
       ? SEED_ORDER.slice()
       : Array.from(counts.keys()).sort((a,b) => a.localeCompare(b));
@@ -352,16 +359,14 @@ function renderTeam(teamName) {
     teams.forEach(team => {
       const c = counts.get(team) || { afc:0, nfc:0, sb:0 };
 
-      const teamHtml = isEliminated(team)
-        ? `<span class="eliminated">${team}</span>`
-        : team;
+      const teamHtml = renderTeam(team);
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td class="name">${teamHtml}</td>
-        <td>${c.afc}</td>
-        <td>${c.nfc}</td>
-        <td>${c.sb}</td>
+        <td>${fmtCount(c.afc)}</td>
+        <td>${fmtCount(c.nfc)}</td>
+        <td>${fmtCount(c.sb)}</td>
       `;
       distBodyEl.appendChild(tr);
     });
@@ -384,7 +389,6 @@ function renderTeam(teamName) {
     renderRows(rows);
     buildDistribution(rows);
 
-    // Basic sanity help if seed list missing
     if (!SEED_ORDER.length) {
       msgEl.textContent = "Loaded superbowl_predictions.csv. (Optional) Add SEED_ORDER list for Pick Distribution ordering.";
     } else {
@@ -402,4 +406,3 @@ function renderTeam(teamName) {
 
 </body>
 </html>
-
