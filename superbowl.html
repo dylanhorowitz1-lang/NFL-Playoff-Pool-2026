@@ -90,7 +90,7 @@
       font-weight: 700;
     }
 
-    /* Actual Results row styling */
+    /* Results row styling */
     .actualRow th, .actualRow td{
       background: rgba(15,23,48,.70);
       font-weight: 800;
@@ -173,7 +173,7 @@
   ];
 
   // =========================
-  // ACTUAL RESULTS (TBD now)
+  // RESULTS (TBD now)
   // Fill these in later when known
   // =========================
   const ACTUAL = {
@@ -256,14 +256,14 @@
   }
 
   function buildHeader() {
-    // Row 1: Actual results (above everything)
+    // Row 1: Results (above everything)
     const afcTxt = ACTUAL.afc ? ACTUAL.afc : "TBD";
     const nfcTxt = ACTUAL.nfc ? ACTUAL.nfc : "TBD";
     const sbTxt  = ACTUAL.sb  ? ACTUAL.sb  : "TBD";
 
     const rowActual = `
       <tr class="actualRow">
-        <th class="name label">Actual Results</th>
+        <th class="name label">Results</th>
         <td>${afcTxt}</td>
         <td>${nfcTxt}</td>
         <td>${sbTxt}</td>
