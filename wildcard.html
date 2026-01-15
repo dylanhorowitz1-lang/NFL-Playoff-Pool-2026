@@ -121,6 +121,19 @@
     }
 
     #msg { color: var(--muted); font-size: 12px; margin-top: 10px; }
+
+    /* --- Sticky first column (Entrant) --- */
+#tbl th:first-child,
+#tbl td:first-child{
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: rgba(15,23,48,.95);
+}
+
+/* Make header cells stay above everything */
+#tbl thead th{
+  z-index: 10;
   </style>
 </head>
 <body>
@@ -526,6 +539,33 @@
     theadEl.innerHTML = `<tr><th class="name">Name</th></tr>`;
     tbodyEl.innerHTML = ``;
   });
+  function lockTopRows(tableId, numRowsToLock) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+
+  const rows = Array.from(table.querySelectorAll("tbody tr"));
+  const lockRows = rows.slice(0, numRowsToLock);
+
+  let topSoFar = 0;
+  lockRows.forEach((tr, idx) => {
+    tr.style.position = "sticky";
+    tr.style.top = topSoFar + "px";
+    tr.style.zIndex = 9; // above normal body rows
+    tr.style.background = "rgba(15,23,48,.95)";
+
+    // Make each cell match the row background
+    Array.from(tr.cells).forEach(td => {
+      td.style.background = "rgba(15,23,48,.95)";
+    });
+
+    // Add current row height to top offset for next row
+    topSoFar += tr.getBoundingClientRect().height;
+  });
+}
+
+// Call it after the table is rendered:
+lockTopRows("tbl", 4);
+  
 </script>
 </body>
 </html>
