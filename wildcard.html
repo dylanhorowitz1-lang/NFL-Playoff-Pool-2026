@@ -51,15 +51,17 @@
     .card{
       margin-top:18px;border:1px solid var(--border);border-radius:18px;
       background: linear-gradient(180deg, rgba(17,26,51,.75), rgba(15,23,48,.65));
-      box-shadow: var(--shadow);padding:14px;overflow-x:auto;
+      box-shadow: var(--shadow);
+      padding:14px;
+      overflow-x:auto; /* horizontal scroll container */
     }
 
     /* Table */
     table{
       border-collapse: collapse;
       width: 100%;
-      min-width: 1400px;     /* more room for full team names */
-      table-layout: fixed;   /* keep widths consistent */
+      min-width: 1400px;
+      table-layout: fixed;
     }
 
     /* Column sizing: Adv + Spread equal, O/U smaller */
@@ -75,19 +77,13 @@
       vertical-align: middle;
       white-space: nowrap;
       overflow: hidden;
-      text-overflow: clip; /* don't add Los... unless absolutely needed */
+      text-overflow: clip;
       font-size: 13px;
     }
     th.name, td.name{
       text-align: left;
       font-weight: 700;
       width: 200px;
-    }
-    thead th{
-      position: sticky;
-      top: 0;
-      background: rgba(15,23,48,.95);
-      z-index: 2;
     }
 
     /* separators between games */
@@ -96,21 +92,10 @@
     }
 
     /* result colors */
-.correct { background: rgba(94, 234, 212, 0.22); /* muted teal */
-  color: #e8fff8;
-}
-
-.wrong { background: rgba(239, 68, 68, 0.22); /* muted red */
-  color: #ffecec;
-}
-
-.push { background: rgba(234, 179, 8, 0.22); /* muted amber */
-  color: #fff6db;
-}
-
-.pending { background: rgba(255, 255, 255, 0.08); /* subtle neutral */
-  color: var(--muted);
-}
+    .correct { background: rgba(94, 234, 212, 0.22); color: #e8fff8; }
+    .wrong   { background: rgba(239, 68, 68, 0.22); color: #ffecec; }
+    .push    { background: rgba(234, 179, 8, 0.22); color: #fff6db; }
+    .pending { background: rgba(255, 255, 255, 0.08); color: var(--muted); }
 
     /* results row label */
     .correct-row-label{
@@ -122,20 +107,24 @@
 
     #msg { color: var(--muted); font-size: 12px; margin-top: 10px; }
 
-    /* --- Sticky first column (Entrant) --- */
-#picksTable th:first-child,
-#picksTable td:first-child{
-  position: sticky;
-  left: 0;
-  z-index: 5;
-  background: rgba(15,23,48,.95);
-}
+    /* ===== STICKY FIRST COLUMN ===== */
+    .sticky-first-col{
+      position: sticky;
+      left: 0;
+      background: rgba(15,23,48,.95);
+    }
 
-/* Make header cells stay above everything */
-#picksTable thead th{
-  z-index: 10;
+    /* z-index layers:
+       - header cells: highest
+       - first column header intersection: highest of all
+       - first column body: above other body cells
+    */
+    #picksTable thead th{ z-index: 10; }
+    #picksTable tbody td.sticky-first-col{ z-index: 6; }
+    #picksTable thead th.sticky-first-col{ z-index: 12; }
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <div class="top">
@@ -156,7 +145,6 @@
 
     <div class="card">
       <table id="picksTable">
-        <!-- Enforce column widths: Name + (Adv, Spread, O/U) * 6 -->
         <colgroup>
           <col class="c-name">
           <col class="c-adv"><col class="c-ats"><col class="c-ou">
@@ -185,12 +173,11 @@
   }
 
   function buildScoreboardUrl(){
-    // IMPORTANT: include past days so completed games still show up
     const start = new Date();
-    start.setDate(start.getDate() - 10); // 10 days back
+    start.setDate(start.getDate() - 10);
 
     const end = new Date();
-    end.setDate(end.getDate() + 10);     // 10 days forward
+    end.setDate(end.getDate() + 10);
 
     const range = `${yyyymmdd(start)}-${yyyymmdd(end)}`;
     return `${BASE_SCOREBOARD}?dates=${range}`;
@@ -259,7 +246,6 @@
     } catch (e) { return null; }
   }
 
-  // Lines: map GameID -> {homeSpread,total} AND preserve order from file
   function parseLinesWithOrder(linesText) {
     const rows = parseCSV(linesText);
     const map = new Map();
@@ -312,7 +298,6 @@
   }
 
   function buildHeaders(matchups, gameIds, eventsById, linesById) {
-    // Row 1: Game matchups
     let row1 = `<tr><th class="name">Game</th>`;
     matchups.forEach((m, idx) => {
       const sepClass = (idx < matchups.length - 1) ? "sep" : "";
@@ -320,7 +305,6 @@
     });
     row1 += `</tr>`;
 
-    // Row 2: Lines (always show if lines exist)
     let row2 = `<tr><th class="name">Lines</th>`;
     gameIds.forEach((gid, idx) => {
       const sepClass = (idx < gameIds.length - 1) ? "sep" : "";
@@ -332,7 +316,6 @@
         return;
       }
 
-      // If ESPN exists, show team name with spread; otherwise just show numeric spread/total.
       let spreadText = `${line.homeSpread}`;
       if (ev) {
         const info = eventToInfo(ev);
@@ -348,7 +331,6 @@
     });
     row2 += `</tr>`;
 
-    // Row 3: Results (label + cells)
     let row3 = `<tr><th class="name">Results</th>`;
     for (let i = 1; i <= 6; i++) {
       const sepClass = (i < 6) ? "sep" : "";
@@ -360,7 +342,6 @@
     }
     row3 += `</tr>`;
 
-    // Row 4: Pick labels
     let row4 = `<tr><th class="name">Name</th>`;
     for (let i = 1; i <= 6; i++) {
       const sepClass = (i < 6) ? "sep" : "";
@@ -424,7 +405,7 @@
   function renderGrid(pickRows, gameIds, eventsById, linesById) {
     tbodyEl.innerHTML = "";
 
-    const rows = pickRows.filter(r => String(r.Name || "").trim() !== ""); // keep CSV order
+    const rows = pickRows.filter(r => String(r.Name || "").trim() !== "");
 
     rows.forEach(r => {
       const tr = document.createElement("tr");
@@ -436,7 +417,7 @@
 
         const advPick = String(r[`PickAdvancing${i}`] || "").trim();
         const atsPick = String(r[`PickATS${i}`] || "").trim();
-        const ouPick  = String(r[`Pick OU${i}`] || "").trim(); // exact header includes space
+        const ouPick  = String(r[`Pick OU${i}`] || "").trim();
 
         if (!gid || !ev) {
           tr.insertAdjacentHTML("beforeend", `
@@ -480,6 +461,35 @@
     return ids;
   }
 
+  // ===== STICKY HELPERS (first column + 4 header rows) =====
+  function applyStickyFirstColumnAndHeaderRows() {
+    const table = document.getElementById("picksTable");
+    if (!table) return;
+
+    // 1) First column sticky (thead + tbody)
+    table.querySelectorAll("tr").forEach(tr => {
+      const cell0 = tr.cells && tr.cells[0];
+      if (cell0) cell0.classList.add("sticky-first-col");
+    });
+
+    // 2) Multi-row sticky header: set correct top offset per THEAD row
+    const thead = table.querySelector("thead");
+    if (!thead) return;
+
+    const headerRows = Array.from(thead.rows || []);
+    let top = 0;
+
+    headerRows.forEach(tr => {
+      const h = tr.getBoundingClientRect().height || 0;
+      Array.from(tr.cells || []).forEach(th => {
+        th.style.position = "sticky";
+        th.style.top = top + "px";
+        th.style.background = "rgba(15,23,48,.95)";
+      });
+      top += h;
+    });
+  }
+
   async function main() {
     msgEl.textContent = "Loading…";
 
@@ -489,12 +499,10 @@
     const { map: linesById, order: lineOrder } =
       linesText ? parseLinesWithOrder(linesText) : { map: new Map(), order: [] };
 
-    // Always load scoreboard so matchups/results can show (now includes past games too)
     const data = await fetchJsonWithFallback(SCOREBOARD_URLS);
 
     const eventsById = new Map();
     (data.events || []).forEach(ev => {
-      // index by BOTH ids (some places use event.id, others use competition.id)
       if (ev?.id) eventsById.set(String(ev.id), ev);
       const compId = ev?.competitions?.[0]?.id;
       if (compId) eventsById.set(String(compId), ev);
@@ -523,6 +531,9 @@
     if (!picksText) {
       msgEl.textContent = (msgEl.textContent ? msgEl.textContent + " " : "") +
         "No picks yet (missing wildcard_picks.csv).";
+
+      // Still apply sticky to the header/first col once header exists
+      requestAnimationFrame(() => requestAnimationFrame(applyStickyFirstColumnAndHeaderRows));
       return;
     }
 
@@ -531,6 +542,9 @@
 
     msgEl.textContent =
       (!linesText ? "Loaded picks. Missing lines.csv." : "Loaded wildcard_picks.csv and lines.csv.");
+
+    // Apply sticky after DOM has painted sizes
+    requestAnimationFrame(() => requestAnimationFrame(applyStickyFirstColumnAndHeaderRows));
   }
 
   main().catch(err => {
@@ -539,33 +553,6 @@
     theadEl.innerHTML = `<tr><th class="name">Name</th></tr>`;
     tbodyEl.innerHTML = ``;
   });
-  function lockTopRows(tableId, numRowsToLock) {
-  const table = document.getElementById(tableId);
-  if (!table) return;
-
-  const rows = Array.from(table.querySelectorAll("tbody tr"));
-  const lockRows = rows.slice(0, numRowsToLock);
-
-  let topSoFar = 0;
-  lockRows.forEach((tr, idx) => {
-    tr.style.position = "sticky";
-    tr.style.top = topSoFar + "px";
-    tr.style.zIndex = 9; // above normal body rows
-    tr.style.background = "rgba(15,23,48,.95)";
-
-    // Make each cell match the row background
-    Array.from(tr.cells).forEach(td => {
-      td.style.background = "rgba(15,23,48,.95)";
-    });
-
-    // Add current row height to top offset for next row
-    topSoFar += tr.getBoundingClientRect().height;
-  });
-}
-
-// Call it after the table is rendered:
-lockTopRows("picksTable", 4);
-  
 </script>
 </body>
 </html>
