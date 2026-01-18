@@ -188,7 +188,7 @@
   })();
 
   const PICKS_CSV = "divisional_picks.csv";
-  const LINES_CSV = "lines2.csv";
+  const LINES_CSV = "lines.csv";
 
   const msgEl = document.getElementById("msg");
   const theadEl = document.getElementById("thead");
@@ -519,7 +519,7 @@
 
     buildHeaders(matchups, gameIds, eventsById, linesById);
 
-    if (!linesText) msgEl.textContent = "Missing lines2.csv (spreads/totals).";
+    if (!linesText) msgEl.textContent = "Missing lines.csv (spreads/totals).";
 
     if (!picksText) {
       msgEl.textContent = (msgEl.textContent ? msgEl.textContent + " " : "") +
