@@ -165,30 +165,30 @@
 <script>
   const BASE_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 
-  function yyyymmdd(d){
-    const y = d.getFullYear();
-    const m = String(d.getMonth()+1).padStart(2,"0");
-    const day = String(d.getDate()).padStart(2,"0");
-    return `${y}${m}${day}`;
-  }
+function yyyymmdd(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}${m}${day}`;
+}
 
-  function buildScoreboardUrl(){
-    const start = new Date();
-    start.setDate(start.getDate() - 10);
-    const end = new Date();
-    end.setDate(end.getDate() + 10);
-    const range = `${yyyymmdd(start)}-${yyyymmdd(end)}`;
-    return `${BASE_SCOREBOARD}?dates=${range}`;
-  }
+function buildScoreboardUrl(){
+  const start = new Date();
+  start.setDate(start.getDate() - 30); // wider for WC
+  const end = new Date();
+  end.setDate(end.getDate() + 10);
+  const range = `${yyyymmdd(start)}-${yyyymmdd(end)}`;
+  return `${BASE_SCOREBOARD}?dates=${range}`;
+}
 
-  const SCOREBOARD_URLS = (() => {
-    const url = buildScoreboardUrl();
-    return [
-      "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(url),
-      "https://corsproxy.io/?" + encodeURIComponent(url),
-      "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
-    ];
-  })();
+const SCOREBOARD_URLS = (() => {
+  const url = buildScoreboardUrl();
+  return [
+    "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(url),
+    "https://corsproxy.io/?" + encodeURIComponent(url),
+    "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
+  ];
+})();
 
   const msgEl = document.getElementById("msg");
   const theadEl = document.getElementById("thead");
