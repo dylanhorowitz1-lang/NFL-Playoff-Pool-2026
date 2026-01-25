@@ -49,8 +49,6 @@
     }
     .btn:hover{transform: translateY(-1px);border-color: rgba(94,234,212,.45)}
 
-    /* IMPORTANT CHANGE:
-       The CARD no longer has overflow. Sticky headers work again. */
     .card{
       margin-top:18px;border:1px solid var(--border);border-radius:18px;
       background: linear-gradient(180deg, rgba(17,26,51,.75), rgba(15,23,48,.65));
@@ -58,13 +56,11 @@
       padding:14px;
     }
 
-    /* Horizontal scrolling lives here instead */
     .tableScroll{
       overflow-x:auto;
       overflow-y:visible;
     }
 
-    /* Table */
     table{
       border-collapse: collapse;
       width: 100%;
@@ -72,7 +68,6 @@
       table-layout: fixed;
     }
 
-    /* Column sizing */
     col.c-name { width: 200px; }
     col.c-adv  { width: 150px; }
     col.c-ats  { width: 150px; }
@@ -94,12 +89,8 @@
       width: 200px;
     }
 
-    /* separators between games */
-    .sep{
-      border-right: 3px solid var(--sep) !important;
-    }
+    .sep{ border-right: 3px solid var(--sep) !important; }
 
-    /* result colors */
     .correct { background: rgba(94, 234, 212, 0.22); color: #e8fff8; }
     .wrong   { background: rgba(239, 68, 68, 0.22); color: #ffecec; }
     .push    { background: rgba(234, 179, 8, 0.22); color: #fff6db; }
@@ -107,7 +98,6 @@
 
     #msg { color: var(--muted); font-size: 12px; margin-top: 10px; }
 
-    /* Sticky header rows (JS sets per-row top offsets) */
     #picksTable thead th{
       position: sticky;
       top: 0;
@@ -115,7 +105,6 @@
       z-index: 10;
     }
 
-    /* Sticky first column ONLY for body rows */
     #picksTable tbody td.sticky-first-col{
       position: sticky;
       left: 0;
@@ -163,32 +152,47 @@
   </div>
 
 <script>
+(() => {
+  "use strict";
+
+  const N_GAMES = 6;
+
   const BASE_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 
-function yyyymmdd(d){
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,"0");
-  const day = String(d.getDate()).padStart(2,"0");
-  return `${y}${m}${day}`;
-}
+  function yyyymmdd(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    return `${y}${m}${day}`;
+  }
 
-function buildScoreboardUrl(){
-  const start = new Date();
-  start.setDate(start.getDate() - 30); // wider for WC
-  const end = new Date();
-  end.setDate(end.getDate() + 10);
-  const range = `${yyyymmdd(start)}-${yyyymmdd(end)}`;
-  return `${BASE_SCOREBOARD}?dates=${range}`;
-}
+  function buildScoreboardUrl(){
+    const start = new Date();
+    start.setDate(start.getDate() - 30); // wider for WC
+    const end = new Date();
+    end.setDate(end.getDate() + 10);
+    const range = `${yyyymmdd(start)}-${yyyymmdd(end)}`;
+    return `${BASE_SCOREBOARD}?dates=${range}`;
+  }
 
-const SCOREBOARD_URLS = (() => {
-  const url = buildScoreboardUrl();
-  return [
-    "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(url),
-    "https://corsproxy.io/?" + encodeURIComponent(url),
-    "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
-  ];
-})();
+  const SCOREBOARD_URLS = (() => {
+    const url = buildScoreboardUrl();
+    return [
+      "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(url),
+      "https://corsproxy.io/?" + encodeURIComponent(url),
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
+    ];
+  })();
+
+  // ===== ESPN SUMMARY FALLBACK (for games no longer in scoreboard response) =====
+  function summaryUrlsForGame(gid){
+    const base = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=" + encodeURIComponent(gid);
+    return [
+      "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(base),
+      "https://corsproxy.io/?" + encodeURIComponent(base),
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(base)
+    ];
+  }
 
   const msgEl = document.getElementById("msg");
   const theadEl = document.getElementById("thead");
@@ -233,7 +237,7 @@ const SCOREBOARD_URLS = (() => {
         return await r.json();
       } catch (e) { lastErr = e; }
     }
-    throw lastErr || new Error("Failed to fetch scoreboard");
+    throw lastErr || new Error("Failed to fetch JSON");
   }
 
   async function fetchTextOrNull(path) {
@@ -259,8 +263,16 @@ const SCOREBOARD_URLS = (() => {
     return { map, order };
   }
 
+  function getCompetition(ev){
+    // scoreboard shape: ev.competitions[0]
+    if (ev?.competitions?.[0]) return ev.competitions[0];
+    // summary shape: ev.header.competitions[0]
+    if (ev?.header?.competitions?.[0]) return ev.header.competitions[0];
+    return null;
+  }
+
   function eventToInfo(ev) {
-    const comp = ev.competitions?.[0];
+    const comp = getCompetition(ev);
     const teams = comp?.competitors || [];
     const away = teams.find(t => t.homeAway === "away");
     const home = teams.find(t => t.homeAway === "home");
@@ -330,8 +342,8 @@ const SCOREBOARD_URLS = (() => {
     row2 += `</tr>`;
 
     let row3 = `<tr><th class="name">Results</th>`;
-    for (let i = 1; i <= 6; i++) {
-      const sepClass = (i < 6) ? "sep" : "";
+    for (let i = 1; i <= N_GAMES; i++) {
+      const sepClass = (i < N_GAMES) ? "sep" : "";
       row3 += `
         <td id="res_adv_${i}" class="pending">TBD</td>
         <td id="res_ats_${i}" class="pending">TBD</td>
@@ -341,8 +353,8 @@ const SCOREBOARD_URLS = (() => {
     row3 += `</tr>`;
 
     let row4 = `<tr><th class="name">Name</th>`;
-    for (let i = 1; i <= 6; i++) {
-      const sepClass = (i < 6) ? "sep" : "";
+    for (let i = 1; i <= N_GAMES; i++) {
+      const sepClass = (i < N_GAMES) ? "sep" : "";
       row4 += `<th>Adv</th><th>Spread</th><th class="${sepClass}">O/U</th>`;
     }
     row4 += `</tr>`;
@@ -359,7 +371,7 @@ const SCOREBOARD_URLS = (() => {
   }
 
   function renderResults(gameIds, eventsById, linesById) {
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= N_GAMES; i++) {
       const gid = gameIds[i-1];
       const ev = gid ? eventsById.get(gid) : null;
 
@@ -409,7 +421,7 @@ const SCOREBOARD_URLS = (() => {
       const tr = document.createElement("tr");
       tr.innerHTML = `<td class="name sticky-first-col">${String(r.Name||"").trim()}</td>`;
 
-      for (let i = 1; i <= 6; i++) {
+      for (let i = 1; i <= N_GAMES; i++) {
         const gid = gameIds[i-1];
         const ev = gid ? eventsById.get(gid) : null;
 
@@ -417,11 +429,13 @@ const SCOREBOARD_URLS = (() => {
         const atsPick = String(r[`PickATS${i}`] || "").trim();
         const ouPick  = String(r[`Pick OU${i}`] || "").trim();
 
+        const sepClass = (i < N_GAMES) ? "sep" : "";
+
         if (!gid || !ev) {
           tr.insertAdjacentHTML("beforeend", `
             <td class="pending">${advPick}</td>
             <td class="pending">${atsPick}</td>
-            <td class="pending sep">${ouPick}</td>
+            <td class="pending ${sepClass}">${ouPick}</td>
           `);
           continue;
         }
@@ -443,7 +457,7 @@ const SCOREBOARD_URLS = (() => {
         tr.insertAdjacentHTML("beforeend", `
           <td class="${advClass}">${advPick}</td>
           <td class="${atsClass}">${atsPick}</td>
-          <td class="${ouClass} sep">${ouPick}</td>
+          <td class="${ouClass} ${sepClass}">${ouPick}</td>
         `);
       }
 
@@ -453,13 +467,12 @@ const SCOREBOARD_URLS = (() => {
 
   function extractGameIdsWide(pickRows) {
     const first = pickRows.find(r => String(r.GameID1 || "").trim() !== "");
-    if (!first) return ["","","","","",""];
+    if (!first) return Array.from({length:N_GAMES}, () => "");
     const ids = [];
-    for (let i = 1; i <= 6; i++) ids.push(String(first[`GameID${i}`] || "").trim());
+    for (let i = 1; i <= N_GAMES; i++) ids.push(String(first[`GameID${i}`] || "").trim());
     return ids;
   }
 
-  // Multi-row sticky header: compute top offsets per row
   function applyStickyHeaderOffsets() {
     const table = document.getElementById("picksTable");
     if (!table) return;
@@ -479,6 +492,19 @@ const SCOREBOARD_URLS = (() => {
     });
   }
 
+  async function hydrateMissingEvents(eventsById, gameIds){
+    const missing = (gameIds || []).filter(gid => gid && !eventsById.has(String(gid)));
+    if (!missing.length) return;
+
+    await Promise.all(missing.map(async gid => {
+      try{
+        const data = await fetchJsonWithFallback(summaryUrlsForGame(gid));
+        // store summary response keyed by the gid; eventToInfo() supports it
+        eventsById.set(String(gid), data);
+      }catch(e){}
+    }));
+  }
+
   async function main() {
     msgEl.textContent = "Loading…";
 
@@ -488,7 +514,14 @@ const SCOREBOARD_URLS = (() => {
     const { map: linesById, order: lineOrder } =
       linesText ? parseLinesWithOrder(linesText) : { map: new Map(), order: [] };
 
-    const data = await fetchJsonWithFallback(SCOREBOARD_URLS);
+    // Scoreboard fetch
+    let data = { events: [] };
+    try{
+      data = await fetchJsonWithFallback(SCOREBOARD_URLS);
+    }catch(e){
+      // still proceed; summary fallback may rescue some/all games
+      data = { events: [] };
+    }
 
     const eventsById = new Map();
     (data.events || []).forEach(ev => {
@@ -498,14 +531,17 @@ const SCOREBOARD_URLS = (() => {
     });
 
     let pickRows = [];
-    let gameIds = ["","","","","",""];
+    let gameIds = Array.from({length:N_GAMES}, () => "");
 
     if (picksText) {
       pickRows = parseCSV(picksText);
       gameIds = extractGameIdsWide(pickRows);
     } else if (lineOrder.length) {
-      gameIds = lineOrder.slice(0, 6);
+      gameIds = lineOrder.slice(0, N_GAMES);
     }
+
+    // ✅ NEW: hydrate games not present in scoreboard (old WC games, etc.)
+    await hydrateMissingEvents(eventsById, gameIds);
 
     const matchups = gameIds.map((gid, idx) => {
       const ev = gid ? eventsById.get(gid) : null;
@@ -541,6 +577,7 @@ const SCOREBOARD_URLS = (() => {
     theadEl.innerHTML = `<tr><th class="name">Name</th></tr>`;
     tbodyEl.innerHTML = ``;
   });
+})();
 </script>
 </body>
 </html>
