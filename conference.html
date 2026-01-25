@@ -1,0 +1,551 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Divisional Picks</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#111a33;
+      --card2:#0f1730;
+      --text:#e8ecff;
+      --muted:#a9b3da;
+      --accent:#5eead4;
+      --border: rgba(255,255,255,.12);
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --grid: rgba(255,255,255,.18);
+      --sep: rgba(255,255,255,.38);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 500px at 20% -10%, rgba(94,234,212,.18), transparent 60%),
+                  radial-gradient(900px 500px at 100% 0%, rgba(99,102,241,.22), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+    }
+    .wrap{max-width:1300px;margin:0 auto;padding:28px 16px 44px}
+    .top{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
+      padding:18px 18px 10px;border:1px solid var(--border);border-radius:18px;background:rgba(17,26,51,.55);
+      box-shadow: var(--shadow); backdrop-filter: blur(10px);
+    }
+    h1{margin:0;font-size:28px;letter-spacing:.2px}
+    .sub{margin:6px 0 0;color:var(--muted);max-width:860px;line-height:1.45}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border:1px solid var(--border);border-radius:999px;
+      color:var(--muted);font-size:12px;background:rgba(15,23,48,.55)
+    }
+    .nav{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;}
+    .btn{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:10px 12px;border-radius:12px;border:1px solid var(--border);
+      background: rgba(15,23,48,.65);color:var(--text);text-decoration:none;
+      transition: transform .12s ease, border-color .12s ease;
+    }
+    .btn:hover{transform: translateY(-1px);border-color: rgba(94,234,212,.45)}
+
+    /* IMPORTANT: card has NO overflow (sticky header works). Scroll lives in inner wrapper. */
+    .card{
+      margin-top:18px;border:1px solid var(--border);border-radius:18px;
+      background: linear-gradient(180deg, rgba(17,26,51,.75), rgba(15,23,48,.65));
+      box-shadow: var(--shadow);
+      padding:14px;
+    }
+    .tableScroll{
+      overflow-x:auto;
+      overflow-y:visible;
+    }
+
+    table{
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 1100px;     /* fewer games = smaller */
+      table-layout: fixed;
+    }
+
+    /* Column sizing: Name + (Adv, Spread, O/U) * 4 */
+    col.c-name { width: 200px; }
+    col.c-adv  { width: 150px; }
+    col.c-ats  { width: 150px; }
+    col.c-ou   { width: 90px; }
+
+    th, td{
+      border: 1px solid var(--grid);
+      padding: 7px 8px;
+      text-align: center;
+      vertical-align: middle;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: clip;
+      font-size: 13px;
+    }
+    th.name, td.name{
+      text-align: left;
+      font-weight: 700;
+      width: 200px;
+    }
+
+    .sep{ border-right: 3px solid var(--sep) !important; }
+
+    .correct { background: rgba(94, 234, 212, 0.22); color: #e8fff8; }
+    .wrong   { background: rgba(239, 68, 68, 0.22); color: #ffecec; }
+    .push    { background: rgba(234, 179, 8, 0.22); color: #fff6db; }
+    .pending { background: rgba(255, 255, 255, 0.08); color: var(--muted); }
+
+    #msg { color: var(--muted); font-size: 12px; margin-top: 10px; }
+
+    /* Sticky header rows (JS sets per-row top offsets) */
+    #picksTable thead th{
+      position: sticky;
+      top: 0;
+      background: rgba(15,23,48,.95);
+      z-index: 10;
+    }
+
+    /* Sticky first column ONLY for body rows */
+    #picksTable tbody td.sticky-first-col{
+      position: sticky;
+      left: 0;
+      z-index: 6;
+      background: rgba(15,23,48,.95);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Divisional Picks</h1>
+        <p class="sub">Matchups and results load automatically. Picks load from <b>divisional_picks.csv</b>. Lines load from <b>lines.csv</b>.</p>
+        <div class="nav">
+          <a class="btn" href="index.html">Home</a>
+          <a class="btn" href="standings.html">Standings</a>
+          <a class="btn" href="games.html">NFL Scores</a>
+        </div>
+      </div>
+      <div class="pill">Manual refresh</div>
+    </div>
+
+    <div id="msg"></div>
+
+    <div class="card">
+      <div class="tableScroll">
+        <table id="picksTable">
+          <!-- Name + (Adv, Spread, O/U) * 4 -->
+          <colgroup>
+            <col class="c-name">
+            <col class="c-adv"><col class="c-ats"><col class="c-ou">
+            <col class="c-adv"><col class="c-ats"><col class="c-ou">
+            <col class="c-adv"><col class="c-ats"><col class="c-ou">
+            <col class="c-adv"><col class="c-ats"><col class="c-ou">
+          </colgroup>
+
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  const N_GAMES = 4;
+
+  // ESPN scoreboard via proxy fallback (WIDE window: past + future)
+  const BASE_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
+
+  function yyyymmdd(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    return `${y}${m}${day}`;
+  }
+
+  function buildScoreboardUrl(){
+    const start = new Date();
+    start.setDate(start.getDate() - 10);
+    const end = new Date();
+    end.setDate(end.getDate() + 10);
+    const range = `${yyyymmdd(start)}-${yyyymmdd(end)}`;
+    return `${BASE_SCOREBOARD}?dates=${range}`;
+  }
+
+  const SCOREBOARD_URLS = (() => {
+    const url = buildScoreboardUrl();
+    return [
+      "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(url),
+      "https://corsproxy.io/?" + encodeURIComponent(url),
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
+    ];
+  })();
+
+  const PICKS_CSV = "divisional_picks.csv";
+  const LINES_CSV = "lines.csv";
+
+  const msgEl = document.getElementById("msg");
+  const theadEl = document.getElementById("thead");
+  const tbodyEl = document.getElementById("tbody");
+
+  function norm(s) { return String(s || "").trim().toLowerCase(); }
+
+  function splitCSVLine(line) {
+    const out = [];
+    let cur = "", inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        out.push(cur); cur = "";
+      } else cur += ch;
+    }
+    out.push(cur);
+    return out.map(x => x.trim());
+  }
+
+  function parseCSV(text) {
+    const lines = text.replace(/\r/g, "").split("\n").filter(l => l.trim() !== "");
+    if (lines.length < 2) return [];
+    const headers = splitCSVLine(lines[0]);
+    return lines.slice(1).map(line => {
+      const cols = splitCSVLine(line);
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = (cols[i] ?? ""));
+      return obj;
+    });
+  }
+
+  async function fetchJsonWithFallback(urls) {
+    let lastErr = null;
+    for (const u of urls) {
+      try {
+        const r = await fetch(u, { cache: "no-store" });
+        if (!r.ok) { lastErr = new Error(`HTTP ${r.status}`); continue; }
+        return await r.json();
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new Error("Failed to fetch scoreboard");
+  }
+
+  async function fetchTextOrNull(path) {
+    try {
+      const r = await fetch(path, { cache: "no-store" });
+      if (!r.ok) return null;
+      return await r.text();
+    } catch (e) { return null; }
+  }
+
+  // Lines: map GameID -> {homeSpread,total} AND preserve order from file
+  function parseLinesWithOrder(linesText) {
+    const rows = parseCSV(linesText);
+    const map = new Map();
+    const order = [];
+    rows.forEach(r => {
+      const gid = String(r.GameID || r.GAMEID || r.gameid || "").trim();
+      const hs = Number(r.HomeSpread ?? r.homespread);
+      const tot = Number(r.Total ?? r.total);
+      if (!gid || Number.isNaN(hs) || Number.isNaN(tot)) return;
+      if (!map.has(gid)) order.push(gid);
+      map.set(gid, { homeSpread: hs, total: tot });
+    });
+    return { map, order };
+  }
+
+  function eventToInfo(ev) {
+    const comp = ev.competitions?.[0];
+    const teams = comp?.competitors || [];
+    const away = teams.find(t => t.homeAway === "away");
+    const home = teams.find(t => t.homeAway === "home");
+
+    const awayName = away?.team?.displayName || "Away";
+    const homeName = home?.team?.displayName || "Home";
+
+    const awayScore = Number(away?.score ?? NaN);
+    const homeScore = Number(home?.score ?? NaN);
+
+    const isFinal = comp?.status?.type?.completed === true;
+    const winnerTeam = isFinal ? (teams.find(t => t.winner === true)?.team?.displayName || "") : "";
+
+    return { awayName, homeName, awayScore, homeScore, isFinal, winnerTeam };
+  }
+
+  function matchupLabel(info) { return `${info.awayName} @ ${info.homeName}`; }
+
+  function computeATSWinner(info, homeSpread) {
+    const adjHome = info.homeScore + homeSpread;
+    if (adjHome > info.awayScore) return info.homeName;
+    if (adjHome < info.awayScore) return info.awayName;
+    return "Push";
+  }
+
+  function computeOUResult(info, total) {
+    const sum = info.homeScore + info.awayScore;
+    if (sum > total) return "Over";
+    if (sum < total) return "Under";
+    return "Push";
+  }
+
+  function buildHeaders(matchups, gameIds, eventsById, linesById) {
+    // Row 1: Game matchups
+    let row1 = `<tr><th class="name">Game</th>`;
+    matchups.forEach((m, idx) => {
+      const sepClass = (idx < matchups.length - 1) ? "sep" : "";
+      row1 += `<th colspan="3" class="${sepClass}">${m}</th>`;
+    });
+    row1 += `</tr>`;
+
+    // Row 2: Lines
+    let row2 = `<tr><th class="name">Lines</th>`;
+    gameIds.forEach((gid, idx) => {
+      const sepClass = (idx < gameIds.length - 1) ? "sep" : "";
+      const line = gid ? linesById.get(gid) : null;
+      const ev = gid ? eventsById.get(gid) : null;
+
+      if (!gid || !line) {
+        row2 += `<td colspan="3" class="${sepClass}">TBD</td>`;
+        return;
+      }
+
+      let spreadText = `${line.homeSpread}`;
+      if (ev) {
+        const info = eventToInfo(ev);
+        spreadText =
+          line.homeSpread < 0
+            ? `${info.homeName} ${line.homeSpread}`
+            : `${info.awayName} -${line.homeSpread}`;
+      }
+
+      row2 += `<td colspan="3" class="${sepClass}">
+                 ${spreadText} &nbsp; | &nbsp; O/U: ${line.total}
+               </td>`;
+    });
+    row2 += `</tr>`;
+
+    // Row 3: Results
+    let row3 = `<tr><th class="name">Results</th>`;
+    for (let i = 1; i <= N_GAMES; i++) {
+      const sepClass = (i < N_GAMES) ? "sep" : "";
+      row3 += `
+        <td id="res_adv_${i}" class="pending">TBD</td>
+        <td id="res_ats_${i}" class="pending">TBD</td>
+        <td id="res_ou_${i}"  class="pending ${sepClass}">TBD</td>
+      `;
+    }
+    row3 += `</tr>`;
+
+    // Row 4: Pick labels
+    let row4 = `<tr><th class="name">Name</th>`;
+    for (let i = 1; i <= N_GAMES; i++) {
+      const sepClass = (i < N_GAMES) ? "sep" : "";
+      row4 += `<th>Adv</th><th>Spread</th><th class="${sepClass}">O/U</th>`;
+    }
+    row4 += `</tr>`;
+
+    theadEl.innerHTML = row1 + row2 + row3 + row4;
+  }
+
+  function setResultsCell(id, text, cls) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.className = cls ? cls : "";
+    if (id.includes("_ou_")) el.classList.add("sep");
+  }
+
+  function renderResults(gameIds, eventsById, linesById) {
+    for (let i = 1; i <= N_GAMES; i++) {
+      const gid = gameIds[i-1];
+      const ev = gid ? eventsById.get(gid) : null;
+
+      if (!gid || !ev) {
+        setResultsCell(`res_adv_${i}`, "TBD", "pending");
+        setResultsCell(`res_ats_${i}`, "TBD", "pending");
+        setResultsCell(`res_ou_${i}`,  "TBD", "pending");
+        continue;
+      }
+
+      const info = eventToInfo(ev);
+
+      if (!info.isFinal) {
+        setResultsCell(`res_adv_${i}`, "TBD", "pending");
+        setResultsCell(`res_ats_${i}`, "TBD", "pending");
+        setResultsCell(`res_ou_${i}`,  "TBD", "pending");
+        continue;
+      }
+
+      setResultsCell(`res_adv_${i}`, info.winnerTeam || "Final", "");
+
+      const line = linesById.get(gid);
+      if (!line || Number.isNaN(info.homeScore) || Number.isNaN(info.awayScore)) {
+        setResultsCell(`res_ats_${i}`, "Line missing", "pending");
+        setResultsCell(`res_ou_${i}`,  "Line missing", "pending");
+        continue;
+      }
+
+      setResultsCell(`res_ats_${i}`, computeATSWinner(info, line.homeSpread), "");
+      setResultsCell(`res_ou_${i}`,  computeOUResult(info, line.total), "");
+    }
+  }
+
+  function cellClassForPick(pick, correct, isFinal) {
+    if (!isFinal) return "pending";
+    if (correct === "Push") return "push";
+    if (!pick) return "wrong";
+    return norm(pick) === norm(correct) ? "correct" : "wrong";
+  }
+
+  function renderGrid(pickRows, gameIds, eventsById, linesById) {
+    tbodyEl.innerHTML = "";
+    const rows = pickRows.filter(r => String(r.Name || "").trim() !== "");
+
+    rows.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td class="name sticky-first-col">${String(r.Name||"").trim()}</td>`;
+
+      for (let i = 1; i <= N_GAMES; i++) {
+        const gid = gameIds[i-1];
+        const ev = gid ? eventsById.get(gid) : null;
+
+        const advPick = String(r[`PickAdvancing${i}`] || "").trim();
+        const atsPick = String(r[`PickATS${i}`] || "").trim();
+        const ouPick  = String(r[`Pick OU${i}`] || "").trim();
+
+        if (!gid || !ev) {
+          const sepClass = (i < N_GAMES) ? "sep" : "";
+          tr.insertAdjacentHTML("beforeend", `
+            <td class="pending">${advPick}</td>
+            <td class="pending">${atsPick}</td>
+            <td class="pending ${sepClass}">${ouPick}</td>
+          `);
+          continue;
+        }
+
+        const info = eventToInfo(ev);
+        const advClass = cellClassForPick(advPick, info.winnerTeam, info.isFinal);
+
+        let atsClass = "pending", ouClass = "pending";
+        if (info.isFinal) {
+          const line = linesById.get(gid);
+          if (line && !Number.isNaN(info.homeScore) && !Number.isNaN(info.awayScore)) {
+            const atsWinner = computeATSWinner(info, line.homeSpread);
+            const ouRes = computeOUResult(info, line.total);
+            atsClass = cellClassForPick(atsPick, atsWinner, true);
+            ouClass  = cellClassForPick(ouPick,  ouRes, true);
+          }
+        }
+
+        const sepClass = (i < N_GAMES) ? "sep" : "";
+        tr.insertAdjacentHTML("beforeend", `
+          <td class="${advClass}">${advPick}</td>
+          <td class="${atsClass}">${atsPick}</td>
+          <td class="${ouClass} ${sepClass}">${ouPick}</td>
+        `);
+      }
+
+      tbodyEl.appendChild(tr);
+    });
+  }
+
+  function extractGameIdsWide(pickRows) {
+    const first = pickRows.find(r => String(r.GameID1 || "").trim() !== "");
+    if (!first) return Array.from({length: N_GAMES}, () => "");
+    const ids = [];
+    for (let i = 1; i <= N_GAMES; i++) ids.push(String(first[`GameID${i}`] || "").trim());
+    return ids;
+  }
+
+  // Multi-row sticky header: compute top offsets per row
+  function applyStickyHeaderOffsets() {
+    const table = document.getElementById("picksTable");
+    if (!table) return;
+    const thead = table.querySelector("thead");
+    if (!thead) return;
+
+    const headerRows = Array.from(thead.rows || []);
+    let top = 0;
+
+    headerRows.forEach((tr, rowIndex) => {
+      const h = tr.getBoundingClientRect().height || 0;
+      Array.from(tr.cells || []).forEach(th => {
+        th.style.top = top + "px";
+        th.style.zIndex = String(20 - rowIndex);
+      });
+      top += h;
+    });
+  }
+
+  async function main() {
+    msgEl.textContent = "Loading…";
+
+    const picksText = await fetchTextOrNull(PICKS_CSV);
+    const linesText = await fetchTextOrNull(LINES_CSV);
+
+    const { map: linesById, order: lineOrder } =
+      linesText ? parseLinesWithOrder(linesText) : { map: new Map(), order: [] };
+
+    const data = await fetchJsonWithFallback(SCOREBOARD_URLS);
+
+    const eventsById = new Map();
+    (data.events || []).forEach(ev => {
+      if (ev?.id) eventsById.set(String(ev.id), ev);
+      const compId = ev?.competitions?.[0]?.id;
+      if (compId) eventsById.set(String(compId), ev);
+    });
+
+    let pickRows = [];
+    let gameIds = Array.from({length: N_GAMES}, () => "");
+
+    if (picksText) {
+      pickRows = parseCSV(picksText);
+      gameIds = extractGameIdsWide(pickRows);
+    } else if (lineOrder.length) {
+      gameIds = lineOrder.slice(0, N_GAMES);
+    }
+
+    const matchups = gameIds.map((gid, idx) => {
+      const ev = gid ? eventsById.get(gid) : null;
+      if (!ev) return `Game ${idx + 1}`;
+      return matchupLabel(eventToInfo(ev));
+    });
+
+    buildHeaders(matchups, gameIds, eventsById, linesById);
+
+    if (!linesText) msgEl.textContent = "Missing lines.csv (spreads/totals).";
+
+    if (!picksText) {
+      msgEl.textContent = (msgEl.textContent ? msgEl.textContent + " " : "") +
+        `No picks yet (missing ${PICKS_CSV}).`;
+      setTimeout(applyStickyHeaderOffsets, 0);
+      window.addEventListener("resize", () => setTimeout(applyStickyHeaderOffsets, 0));
+      return;
+    }
+
+    renderResults(gameIds, eventsById, linesById);
+    renderGrid(pickRows, gameIds, eventsById, linesById);
+
+    msgEl.textContent =
+      (!linesText ? `Loaded picks. Missing ${LINES_CSV}.` : `Loaded ${PICKS_CSV} and ${LINES_CSV}.`);
+
+    setTimeout(applyStickyHeaderOffsets, 0);
+    window.addEventListener("resize", () => setTimeout(applyStickyHeaderOffsets, 0));
+  }
+
+  main().catch(err => {
+    console.error(err);
+    msgEl.textContent = "Could not load data right now.";
+    theadEl.innerHTML = `<tr><th class="name">Name</th></tr>`;
+    tbodyEl.innerHTML = ``;
+  });
+})();
+</script>
+</body>
+</html>
