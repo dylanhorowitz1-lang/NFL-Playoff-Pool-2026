@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Divisional Picks</title>
+  <title>Conference Championship Picks</title>
   <style>
     :root{
       --bg:#0b1020;
@@ -49,7 +49,6 @@
     }
     .btn:hover{transform: translateY(-1px);border-color: rgba(94,234,212,.45)}
 
-    /* IMPORTANT: card has NO overflow (sticky header works). Scroll lives in inner wrapper. */
     .card{
       margin-top:18px;border:1px solid var(--border);border-radius:18px;
       background: linear-gradient(180deg, rgba(17,26,51,.75), rgba(15,23,48,.65));
@@ -64,15 +63,15 @@
     table{
       border-collapse: collapse;
       width: 100%;
-      min-width: 1100px;     /* fewer games = smaller */
+      min-width: 760px;   /* 2 games */
       table-layout: fixed;
     }
 
-    /* Column sizing: Name + (Adv, Spread, O/U) * 4 */
-    col.c-name { width: 200px; }
-    col.c-adv  { width: 150px; }
-    col.c-ats  { width: 150px; }
-    col.c-ou   { width: 90px; }
+    /* Column sizing: Name + (Adv, Spread, O/U) * 2 */
+    col.c-name { width: 220px; }
+    col.c-adv  { width: 160px; }
+    col.c-ats  { width: 160px; }
+    col.c-ou   { width: 110px; }
 
     th, td{
       border: 1px solid var(--grid);
@@ -87,7 +86,7 @@
     th.name, td.name{
       text-align: left;
       font-weight: 700;
-      width: 200px;
+      width: 220px;
     }
 
     .sep{ border-right: 3px solid var(--sep) !important; }
@@ -99,7 +98,6 @@
 
     #msg { color: var(--muted); font-size: 12px; margin-top: 10px; }
 
-    /* Sticky header rows (JS sets per-row top offsets) */
     #picksTable thead th{
       position: sticky;
       top: 0;
@@ -121,12 +119,16 @@
   <div class="wrap">
     <div class="top">
       <div>
-        <h1>Divisional Picks</h1>
-        <p class="sub">Matchups and results load automatically. Picks load from <b>divisional_picks.csv</b>. Lines load from <b>lines.csv</b>.</p>
+        <h1>Conference Championship Picks</h1>
+        <p class="sub">
+          Matchups and results load automatically. Picks load from <b>conference_picks.csv</b>.
+          Lines load from <b>lines.csv</b>.
+        </p>
         <div class="nav">
           <a class="btn" href="index.html">Home</a>
           <a class="btn" href="standings.html">Standings</a>
           <a class="btn" href="games.html">NFL Scores</a>
+          <a class="btn" href="divisional.html">Divisional Picks</a>
         </div>
       </div>
       <div class="pill">Manual refresh</div>
@@ -137,11 +139,9 @@
     <div class="card">
       <div class="tableScroll">
         <table id="picksTable">
-          <!-- Name + (Adv, Spread, O/U) * 4 -->
+          <!-- Name + (Adv, Spread, O/U) * 2 -->
           <colgroup>
             <col class="c-name">
-            <col class="c-adv"><col class="c-ats"><col class="c-ou">
-            <col class="c-adv"><col class="c-ats"><col class="c-ou">
             <col class="c-adv"><col class="c-ats"><col class="c-ou">
             <col class="c-adv"><col class="c-ats"><col class="c-ou">
           </colgroup>
@@ -157,7 +157,7 @@
 (() => {
   "use strict";
 
-  const N_GAMES = 4;
+  const N_GAMES = 2;
 
   // ESPN scoreboard via proxy fallback (WIDE window: past + future)
   const BASE_SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
@@ -187,7 +187,7 @@
     ];
   })();
 
-  const PICKS_CSV = "divisional_picks.csv";
+  const PICKS_CSV = "conference_picks.csv";
   const LINES_CSV = "lines.csv";
 
   const msgEl = document.getElementById("msg");
@@ -295,7 +295,6 @@
   }
 
   function buildHeaders(matchups, gameIds, eventsById, linesById) {
-    // Row 1: Game matchups
     let row1 = `<tr><th class="name">Game</th>`;
     matchups.forEach((m, idx) => {
       const sepClass = (idx < matchups.length - 1) ? "sep" : "";
@@ -303,7 +302,6 @@
     });
     row1 += `</tr>`;
 
-    // Row 2: Lines
     let row2 = `<tr><th class="name">Lines</th>`;
     gameIds.forEach((gid, idx) => {
       const sepClass = (idx < gameIds.length - 1) ? "sep" : "";
@@ -330,7 +328,6 @@
     });
     row2 += `</tr>`;
 
-    // Row 3: Results
     let row3 = `<tr><th class="name">Results</th>`;
     for (let i = 1; i <= N_GAMES; i++) {
       const sepClass = (i < N_GAMES) ? "sep" : "";
@@ -342,7 +339,6 @@
     }
     row3 += `</tr>`;
 
-    // Row 4: Pick labels
     let row4 = `<tr><th class="name">Name</th>`;
     for (let i = 1; i <= N_GAMES; i++) {
       const sepClass = (i < N_GAMES) ? "sep" : "";
@@ -463,7 +459,6 @@
     return ids;
   }
 
-  // Multi-row sticky header: compute top offsets per row
   function applyStickyHeaderOffsets() {
     const table = document.getElementById("picksTable");
     if (!table) return;
