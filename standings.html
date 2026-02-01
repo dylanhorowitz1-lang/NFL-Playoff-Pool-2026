@@ -238,6 +238,18 @@
     PRED: { afc: 4.5, nfc: 4.5, both: 1.5, champ: 7.5 }
   };
 
+  // ==========================================================
+  // MANUAL OVERRIDE (rarely needed)
+  // Leave these blank ("") to stay fully automatic.
+  // If BOTH ESPN + superbowl.html ever fail, set these to the
+  // exact team display names to force prediction scoring.
+  // ==========================================================
+  const MANUAL_CHAMPS = {
+    afc: "New England Patriots",  // e.g. "Kansas City Chiefs"
+    nfc: "Seattle Seahawks",  // e.g. "Philadelphia Eagles"
+    sb:  ""   // e.g. "Kansas City Chiefs"
+  };
+
   const msgEl = document.getElementById("msg");
   const tbodyEl = document.getElementById("tbody");
 
@@ -469,6 +481,56 @@
     return { afcWinner, nfcWinner, sbWinner };
   }
 
+  // ---- NEW: fallback to superbowl.html "ACTUAL" block if ESPN detection is blank ----
+  async function fetchActualFromSuperbowlPage() {
+    const html = await fetchTextOrNull("superbowl.html");
+    if (!html) return null;
+
+    // Expect: const ACTUAL = { afc: "...", nfc: "...", sb: "..." };
+    const m = html.match(/const\s+ACTUAL\s*=\s*\{[\s\S]*?\};/);
+    if (!m) return null;
+    const block = m[0];
+
+    const pick = (key) => {
+      const re = new RegExp(key + String.raw`\s*:\s*("([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)')`);
+      const mm = block.match(re);
+      if (!mm) return "";
+      const raw = (mm[2] ?? mm[3] ?? "");
+      return raw
+        .replace(/\\n/g, "\n")
+        .replace(/\\"/g, '"')
+        .replace(/\\'/g, "'");
+    };
+
+    return {
+      afcWinner: pick("afc").trim(),
+      nfcWinner: pick("nfc").trim(),
+      sbWinner:  pick("sb").trim()
+    };
+  }
+
+  async function getChampsAuto(eventsById) {
+    // 1) ESPN attempt
+    const champs = getChampWinners(eventsById);
+
+    // 2) If missing, fallback to superbowl.html
+    if (!champs.afcWinner || !champs.nfcWinner || !champs.sbWinner) {
+      const fromPage = await fetchActualFromSuperbowlPage();
+      if (fromPage) {
+        if (!champs.afcWinner && fromPage.afcWinner) champs.afcWinner = fromPage.afcWinner;
+        if (!champs.nfcWinner && fromPage.nfcWinner) champs.nfcWinner = fromPage.nfcWinner;
+        if (!champs.sbWinner  && fromPage.sbWinner)  champs.sbWinner  = fromPage.sbWinner;
+      }
+    }
+
+    // 3) LAST resort manual override (normally blank)
+    if (MANUAL_CHAMPS.afc) champs.afcWinner = MANUAL_CHAMPS.afc;
+    if (MANUAL_CHAMPS.nfc) champs.nfcWinner = MANUAL_CHAMPS.nfc;
+    if (MANUAL_CHAMPS.sb)  champs.sbWinner  = MANUAL_CHAMPS.sb;
+
+    return champs;
+  }
+
   function scorePredictions(predRows, champs, standings) {
     predRows.forEach(r => {
       const name = String(r.Name || "").trim();
@@ -623,7 +685,7 @@
     if (confRows.length) scoreRound(confRows, 2, "conf", SC.CONF, eventsById, linesById, standings);
     if (sbRows.length)   scoreRound(sbRows,   1, "sb",   SC.SB,   eventsById, linesById, standings);
 
-    const champs = getChampWinners(eventsById);
+    const champs = await getChampsAuto(eventsById);
     if (predRows.length) scorePredictions(predRows, champs, standings);
 
     finalizeTotals(standings);
