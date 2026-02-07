@@ -170,9 +170,9 @@
 
   function buildScoreboardUrl(){
     const start = new Date();
-    start.setDate(start.getDate() - 10);
+    start.setDate(start.getDate() - 40);
     const end = new Date();
-    end.setDate(end.getDate() + 10);
+    end.setDate(end.getDate() +40);
     const range = `${yyyymmdd(start)}-${yyyymmdd(end)}`;
     return `${BASE_SCOREBOARD}?dates=${range}`;
   }
